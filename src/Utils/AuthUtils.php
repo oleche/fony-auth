@@ -9,6 +9,7 @@ namespace Geekcow\FonyAuth\Utils;
 use Geekcow\FonyCore\Utils\Authenticator;
 use Geekcow\FonyCore\Utils\TokenUtils;
 use Geekcow\FonyAuth\Utils\ConfigurationUtils;
+use Geekcow\FonyAuth\Model\ApiUser;
 use Geekcow\FonyAuth\Model\ApiScope;
 use Geekcow\FonyAuth\Model\ApiToken;
 use Geekcow\FonyAuth\Model\ApiClient;
@@ -16,6 +17,9 @@ use Geekcow\FonyAuth\Model\ApiClientScope;
 use Geekcow\FonyAuth\Model\ApiUserAsoc;
 
 class AuthUtils implements Authenticator {
+  const BASIC = 'Basic ';
+  const BEARER = 'Bearer ';
+
   private $err;
   private $api_client;
   private $api_client_scope;
@@ -33,8 +37,8 @@ class AuthUtils implements Authenticator {
   private $scopes;
   private $config;
 
-  public function __construct() {
-    $this->config = ConfigurationUtils::getInstance();
+  public function __construct($configfile = MY_DOC_ROOT . "/src/config/config.ini") {
+    $this->config = ConfigurationUtils::getInstance($configfile);
     $this->api_client = new ApiClient();
     $this->api_client_scope = new ApiClientScope();
     $this->api_token = new ApiToken();

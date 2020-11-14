@@ -10,6 +10,7 @@ use Geekcow\FonyCore\Controller\CoreController;
 use Geekcow\FonyCore\Controller\ApiMethods;
 use Geekcow\FonyAuth\Utils\TokenUtils;
 use Geekcow\FonyAuth\Utils\AuthUtils;
+use Geekcow\FonyAuth\Utils\ConfigurationUtils;
 
 class AuthController extends CoreController implements ApiMethods
 {
