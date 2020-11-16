@@ -11,12 +11,10 @@ use Geekcow\FonyCore\Controller\ApiMethods;
 use Geekcow\FonyCore\Utils\TokenUtils;
 use Geekcow\FonyAuth\Utils\AuthUtils;
 use Geekcow\FonyAuth\Utils\ConfigurationUtils;
+use Geekcow\FonyAuth\Utils\TokenType;
 
 class ValidateController extends CoreController implements ApiMethods
 {
-  const BASIC = 'Basic ';
-  const BEARER = 'Bearer ';
-
   private $auth_handler;
 
   public function __construct() {
@@ -38,10 +36,10 @@ class ValidateController extends CoreController implements ApiMethods
           $this->response['msg'] = "Not Implemented";
         }
       }else{
-        $token = TokenUtils::sanitizeToken($token, self::BASIC);
-        if (TokenUtils::validateTokenSanity($token, self::BASIC)){
+        $token = TokenUtils::sanitizeToken($token, TokenType::BASIC);
+        if (TokenUtils::validateTokenSanity($token, TokenType::BASIC)){
           if ($this->auth_handler->validateBasicToken($token)){
-            if ($this->validate_fields($params, 'validate', 'POST')){
+            if ($this->validate_fields($params, 'v1/validate', 'POST')){
               if (!$this->auth_handler->validateBearerToken($params['token'])){
                 $this->err = $this->auth_handler->getErr();
                 $this->buildErrorSet();

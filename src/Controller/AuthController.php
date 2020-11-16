@@ -8,15 +8,14 @@ namespace Geekcow\FonyAuth\Controller;
 
 use Geekcow\FonyCore\Controller\CoreController;
 use Geekcow\FonyCore\Controller\ApiMethods;
-use Geekcow\FonyAuth\Utils\TokenUtils;
+use Geekcow\FonyCore\Utils\TokenUtils;
 use Geekcow\FonyAuth\Utils\AuthUtils;
 use Geekcow\FonyAuth\Utils\ConfigurationUtils;
+use Geekcow\FonyAuth\Utils\TokenType;
+use Geekcow\FonyAuth\Utils\GrantTypes;
 
 class AuthController extends CoreController implements ApiMethods
 {
-  const BASIC = 'Basic ';
-  const BEARER = 'Bearer ';
-
   private $auth_handler;
 
   public function __construct() {
@@ -38,32 +37,50 @@ class AuthController extends CoreController implements ApiMethods
           $this->response['msg'] = "Not Implemented";
         }
       }else{
-        $token = TokenUtils::sanitizeToken($token, self::BASIC);
-        if (TokenUtils::validateTokenSanity($token, self::BASIC)){
-          $this->auth_handler->setScopes((isset($params['scope']) && $params['scope'] != '')?$params['scope']:'');
-      		if ($this->auth_handler->validateBasicToken($token) && $this->auth_handler->validateScopes()){
-            if ($this->auth_handler->getAsoc() == 1){
-              if ($this->validate_fields($params, 'login', 'POST')){
-                if (!$this->auth_handler->validateLogin($params)){
-                  $this->err = $this->auth_handler->getErr();
-                  $this->buildErrorSet();
-          				return false;
-                }
-              }else{
-                return false;
-          		}
-            }
+        $token = TokenUtils::sanitizeToken($token, TokenType::BASIC);
+        if (TokenUtils::validateTokenSanity($token, TokenType::BASIC)){
+          if ($this->validate_fields($params, 'v1/authenticate', 'POST')){
+            $this->auth_handler->setScopes((isset($params['scope']) && $params['scope'] != '')?$params['scope']:'');
+            if ($this->auth_handler->validateBasicToken($token) && $this->auth_handler->validateScopes()){
+              switch ($params['grant_type']) {
+                case GrantTypes::PASSWORD:
+                  if ($this->auth_handler->getAsoc() == 1){
+                    if (!$this->auth_handler->validateLogin($params)){
+                      $this->err = $this->auth_handler->getErr();
+                      $this->buildErrorSet();
+                      return false;
+                    }
+                  }
+                  break;
+                case GrantTypes::CLIENT_CREDENTIAL:
+                  if ($this->auth_handler->getAsoc() != 0){
+                    $this->response['type'] = 'error';
+            		    $this->response['code'] = 401;
+                    $this->response['message'] = 'invalid_client';
+                    return false;
+                  }
+                  break;
+                default:
+                  $this->response['type'] = 'error';
+          		    $this->response['code'] = 400;
+                  $this->response['message'] = 'unsupported_grant_type';
+                  return false;
+              }
 
-    				$this->response['code'] = 200;
-    				$this->response['access_token'] = $this->auth_handler->generateToken();
-            $this->response['token_type'] = 'bearer';
-            $this->response['username'] = $this->auth_handler->getUsername();
-    				$this->response['expires'] = ((time($this->auth_handler->getApiToken()->columns['updated_at'])*1000)+$this->auth_handler->getApiToken()->columns['expires']) - (time()*1000);
-    				return true;
-    			}else{
-            $this->buildErrorSet();
-    				return false;
-    			}
+      				$this->response['code'] = 200;
+      				$this->response['access_token'] = $this->auth_handler->generateToken();
+              $this->response['token_type'] = 'bearer';
+              $this->response['username'] = $this->auth_handler->getUsername();
+              $this->response['refresh_token'] = 'To be implemented';
+      				$this->response['expires'] = ((time($this->auth_handler->getApiToken()->columns['updated_at'])*1000)+$this->auth_handler->getApiToken()->columns['expires']) - (time()*1000);
+      				return true;
+      			}else{
+              $this->buildErrorSet();
+      				return false;
+      			}
+          }else{
+            return false;
+          }
   			}else{
   				$this->response['type'] = 'error';
   		    $this->response['code'] = 401;

@@ -9,6 +9,7 @@ namespace Geekcow\FonyAuth\Utils;
 use Geekcow\FonyCore\Utils\Authenticator;
 use Geekcow\FonyCore\Utils\TokenUtils;
 use Geekcow\FonyAuth\Utils\ConfigurationUtils;
+use Geekcow\FonyAuth\Utils\TokenType;
 use Geekcow\FonyAuth\Model\ApiUser;
 use Geekcow\FonyAuth\Model\ApiScope;
 use Geekcow\FonyAuth\Model\ApiToken;
@@ -17,9 +18,6 @@ use Geekcow\FonyAuth\Model\ApiClientScope;
 use Geekcow\FonyAuth\Model\ApiUserAsoc;
 
 class AuthUtils implements Authenticator {
-  const BASIC = 'Basic ';
-  const BEARER = 'Bearer ';
-
   private $err;
   private $api_client;
   private $api_client_scope;
@@ -156,8 +154,8 @@ class AuthUtils implements Authenticator {
    */
   public function validateBearerToken($token){
     try{
-      $token = TokenUtils::sanitizeToken($token, self::BEARER);
-      if (TokenUtils::validateTokenSanity($token, self::BEARER)){
+      $token = TokenUtils::sanitizeToken($token, TokenType::BEARER);
+      if (TokenUtils::validateTokenSanity($token, TokenType::BEARER)){
         return $this->validateToken($token);
       }else{
         $this->err = 'Malformed token';
