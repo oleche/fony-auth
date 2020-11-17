@@ -105,6 +105,33 @@ class AuthUtils implements Authenticator {
   }
 
   /**
+   * Validates if the refresh token is active and valid and then it invalidates it
+   *
+   * @return BOOLEAN
+   *
+   */
+  private function isRefreshToken($token){
+    $result = $this->api_token->fetch("refresh_token = '$token' AND blacklisted = 0", false, array('updated_at'), false);
+    if (count($result) == 1){
+      if ($result[0]->columns['client_id']['client_id'] == $this->client_id){
+        $this->scopes = $result[0]->columns['scopes'];
+        $result[0]->columns['enabled'] = 0;
+        $result[0]->columns['blacklisted'] = 1;
+        $result[0]->columns['client_id'] = $result[0]->columns['client_id']['client_id'];
+        $result[0]->columns['username'] = $result[0]->columns['username']['username'];
+        $result[0]->update();
+        return true;
+      }else{
+        $this->err = 'Invalid client';
+        return false;
+      }
+    }else{
+      $this->err = 'Invalid token';
+      return false;
+    }
+  }
+
+  /**
    * Validates if the token is active and valid then retrieves the scopes and username
    * Structure of a token:
    *   client_id
@@ -115,17 +142,16 @@ class AuthUtils implements Authenticator {
    *
    */
   private function validateToken($token){
-    $result = $this->api_token->fetch("token = '$token' AND enabled = 1", false, array('updated_at'), false);
+    $result = $this->api_token->fetch("token = '$token' AND enabled = 1 AND blacklisted = 0", false, array('updated_at'), false);
     if (count($result) == 1){
-      $token = TokenUtils::decrypt(TokenUtils::base64UrlDecode($token), $this->config->getAppSecret());
-      $token = explode(':', $token);
-
+      $token = utf8_decode(TokenUtils::decrypt(TokenUtils::base64UrlDecode($token), $this->config->getAppSecret()));
+      $token = explode('|', $token);
       if (count($token) == 4){
-        if (((time($result[0]->columns['updated_at'])*1000)+$result[0]->columns['expires']) > (time()*1000)){
+        if (((strtotime($result[0]->columns['updated_at'])*1000)+$result[0]->columns['expires']) > (time()*1000)){
           $this->scopes = $token[2];
           $this->username = trim($token[3]);
-          $this->client_id = $token[0];
-          $this->expiration = $result[0]->columns['expires'];
+          $this->client_id = $result[0]->columns['client_id']['client_id'];
+          $this->expiration = ((strtotime($result[0]->columns['updated_at'])*1000)+$result[0]->columns['expires']) - (time()*1000);
           return true;
         }else{
           $result[0]->columns['enabled'] = 0;
@@ -152,10 +178,25 @@ class AuthUtils implements Authenticator {
    * @return BOOLEAN if found and assigns the client_id, email, username and asociation status
    *
    */
+  public function validateRefreshToken($token){
+    try{
+      return $this->isRefreshToken($token);
+    }catch(Exception $e){
+      $this->err = $e->getMessage();
+      return false;
+    }
+	}
+
+  /**
+   * Validates a refresh token and disables the existing one if found
+   *
+   * @return BOOLEAN if found and assigns the client_id, email, username and asociation status
+   *
+   */
   public function validateBearerToken($token){
     try{
-      $token = TokenUtils::sanitizeToken($token, TokenType::BEARER);
       if (TokenUtils::validateTokenSanity($token, TokenType::BEARER)){
+        $token = TokenUtils::sanitizeToken($token, TokenType::BEARER);
         return $this->validateToken($token);
       }else{
         $this->err = 'Malformed token';
@@ -174,7 +215,7 @@ class AuthUtils implements Authenticator {
    * @return BOOLEAN if found
    *
    */
-  public function validateScopes($method){
+  public function validateScopes(){
     $retval = true;
 
     $scopes_arr = explode(',', $this->scopes);
@@ -216,14 +257,18 @@ class AuthUtils implements Authenticator {
 			return $this->api_token->columns['token'];
 		}else{
       $timestamp = time();
-      $token = TokenUtils::encrypt($this->client_id.':'.$timestamp.':'.$this->scopes.':'.$this->username,$this->config->getAppSecret());
+      $token = TokenUtils::encrypt($this->client_id.'|'.$timestamp.'|'.$this->scopes.'|'.$this->username,$this->config->getAppSecret());
       $token = TokenUtils::base64UrlEncode($token);
+      $refresh_token = TokenUtils::encrypt(date("Y-m-d H:i:s"),$this->config->getAppSecret());
+      $refresh_token = TokenUtils::base64UrlEncode($refresh_token);
       $this->api_token->columns['token'] = $token;
       $this->api_token->columns['username'] = $this->username;
-      $this->api_token->columns['created_at'] = strtotime("now");
-      $this->api_token->columns['updated_at'] = strtotime("now");
+      $this->api_token->columns['created_at'] = date("Y-m-d H:i:s");
+      $this->api_token->columns['updated_at'] = date("Y-m-d H:i:s");
       $this->api_token->columns['expires'] = 3600000;
       $this->api_token->columns['enabled'] = 1;
+      $this->api_token->columns['blacklisted'] = 0;
+      $this->api_token->columns['refresh_token'] = $refresh_token;
       $this->api_token->columns['client_id'] = $this->client_id;
       $this->api_token->columns['scopes'] = $this->scopes;
       $this->api_token->columns['timestamp'] = $timestamp;
@@ -232,8 +277,7 @@ class AuthUtils implements Authenticator {
 				return $token;
 			else {
 				$this->err = 'Error saving token: '.$this->api_token->err_data;
-				throw new Exception("Error Processing Request", 1);
-				return false;
+				throw new \Exception($this->err, 1);
 			}
 		}
 	}
@@ -252,21 +296,20 @@ class AuthUtils implements Authenticator {
    *
    */
   private function locateValidToken(){
-		$result = $this->api_token->fetch("client_id = '$this->client_id' AND username = '$this->username'", false, array('updated_at'), false);
-		$last = false;
+		$result = $this->api_token->fetch("client_id = '$this->client_id' AND username = '$this->username' AND enabled = 1", false, array('updated_at'), false);
+    $last = false;
 		foreach ($result as $r) {
 			if (count($result) > 0){
-				$token = $result[0]->columns['token'];
-				$token = $this->decrypt(TokenUtils::base64UrlDecode($token), $this->config->getAppSecret());
-				$token = explode(':', $token);
+				$token = utf8_decode(TokenUtils::decrypt(TokenUtils::base64UrlDecode($r->columns['token']), $this->config->getAppSecret()));
+        $token = explode('|', $token);
 				$token[2] = (string)$token[2];
 				$token[3] = (string)$token[3];
 
 				if (trim($this->username) == "" || trim($this->username) == trim($token[3])){
 					if (count($token) == 4){
-						if ((trim($this->scopes) == trim($token[2])) && (((time($result[0]->columns['updated_at'])*1000)+$result[0]->columns['expires']) > (time()*1000))){
+						if ((trim($this->scopes) == trim($token[2])) && (((strtotime($result[0]->columns['updated_at'])*1000)+$result[0]->columns['expires']) > (time()*1000))){
 							$this->api_token = $result[0];
-							$this->api_token->columns['updated_at'] = strtotime("now");
+							$this->api_token->columns['updated_at'] = date("Y-m-d H:i:s");
 							$this->api_token->columns['client_id'] = $result[0]->columns['client_id']['client_id'];
               $this->api_token->columns['username'] = $result[0]->columns['username']['username'];
 							$this->api_token->update();
@@ -284,6 +327,7 @@ class AuthUtils implements Authenticator {
 						return false;
 					}
 				}else{
+          echo 'coso';
 					$last = false;
 				}
 			}else{

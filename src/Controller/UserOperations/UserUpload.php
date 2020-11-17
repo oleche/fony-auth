@@ -80,7 +80,7 @@ class UserUpload{
       $model->columns[$k] = $currentValue;
     }
     if (isset($model->columns['updated_at'])){
-      $model->columns['updated_at'] = strtotime("now");
+      $model->columns['updated_at'] = date("Y-m-d H:i:s");
     }
     if ($this->prepare_asset($mime_type[0], $this->username, $filepath, $filename, $tip, $model->columns['avatar_path'])){
       $model->columns['avatar_path'] = str_replace(MY_ASSET_ROOT,"",$filepath);

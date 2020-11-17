@@ -27,17 +27,11 @@ class ValidateController extends CoreController implements ApiMethods
   public function doPOST($token = null, $params = array()){
 		try{
       if (is_array($params) && empty($params)){
-        if ($verb == 'refresh'){
-          //TODO Refresh token
-          $this->response['code'] = 501;
-          $this->response['msg'] = "Not Implemented yet";
-        }else{
-          $this->response['code'] = 501;
-          $this->response['msg'] = "Not Implemented";
-        }
+        $this->response['code'] = 501;
+        $this->response['msg'] = "Not Implemented";
       }else{
-        $token = TokenUtils::sanitizeToken($token, TokenType::BASIC);
         if (TokenUtils::validateTokenSanity($token, TokenType::BASIC)){
+          $token = TokenUtils::sanitizeToken($token, TokenType::BASIC);
           if ($this->auth_handler->validateBasicToken($token)){
             if ($this->validate_fields($params, 'v1/validate', 'POST')){
               if (!$this->auth_handler->validateBearerToken($params['token'])){
@@ -54,7 +48,7 @@ class ValidateController extends CoreController implements ApiMethods
     				$this->response['client_id'] = $this->auth_handler->getClientId();
             $this->response['scope'] = $this->auth_handler->getScopes();
             $this->response['username'] = $this->auth_handler->getUsername();
-    				$this->response['exp'] = ((time($this->auth_handler->getApiToken()->columns['updated_at'])*1000)+$this->auth_handler->getApiToken()->columns['expires']) - (time()*1000);
+    				$this->response['exp'] = $this->auth_handler->getExpiration();
     				return true;
     			}else{
             $this->buildErrorSet();
@@ -68,10 +62,10 @@ class ValidateController extends CoreController implements ApiMethods
   			}
       }
 
-		}catch(Exception $e){
+		}catch(\Exception $e){
 			$this->response['type'] = 'error';
 			$this->response['code'] = 500;
-			$this->response['message'] = $this->err;
+			$this->response['message'] = $e->getMessage();
 			return false;
 		}
   }
@@ -101,7 +95,7 @@ class ValidateController extends CoreController implements ApiMethods
     }
     else
       $this->response['code'] = 401;
-    $this->response['message'] = $this->auth_handler-getErr();
+    $this->response['message'] = $this->auth_handler->getErr();
   }
 }
 

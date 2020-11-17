@@ -110,7 +110,7 @@ class UserPut{
     $this->user->columns['lastname'] = (isset($_POST['lastname']))?$_POST['lastname']:$this->user->columns['lastname'];
     $this->user->columns['phone'] = (isset($_POST['phone']))?$_POST['phone']:$this->user->columns['phone'];
     $this->user->columns['type'] = $this->user->columns['type']['id'];
-    $this->user->columns['updated_at'] = strtotime("now");
+    $this->user->columns['updated_at'] = date("Y-m-d H:i:s");
     if (!$this->user->update()){
       $this->response['type'] = 'error';
       $this->response['title'] = 'User';
@@ -125,7 +125,7 @@ class UserPut{
     $password = sha1($_POST['password']);
     $this->user->columns['password'] = $password;
     $this->user->columns['type'] = $this->user->columns['type']['id'];
-    $this->user->columns['updated_at'] = strtotime("now");
+    $this->user->columns['updated_at'] = date("Y-m-d H:i:s");
     if (!$this->user->update()){
       $this->response['type'] = 'error';
       $this->response['title'] = 'User';
@@ -139,7 +139,7 @@ class UserPut{
   private function updateEnabled($value){
     $this->user->columns['enabled'] = $value;
     $this->user->columns['type'] = $this->user->columns['type']['id'];
-    $this->user->columns['updated_at'] = strtotime("now");
+    $this->user->columns['updated_at'] = date("Y-m-d H:i:s");
     if (!$this->user->update()){
       $this->response['type'] = 'error';
       $this->response['title'] = 'User';

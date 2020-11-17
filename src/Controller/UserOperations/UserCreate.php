@@ -66,8 +66,8 @@ class UserCreate
       $this->user->columns['enabled'] = 1;
       $this->user->columns['verified'] = 1;
       $this->user->columns['verification'] = "";
-			$this->user->columns['created_at'] = strtotime("now");
-			$this->user->columns['updated_at'] = strtotime("now");
+			$this->user->columns['created_at'] = date("Y-m-d H:i:s");
+			$this->user->columns['updated_at'] = date("Y-m-d H:i:s");
 
 	    $id = $this->user->insert();
       if (is_numeric($id)){
@@ -148,8 +148,8 @@ class UserCreate
 		$this->api_client->columns['user_id'] = $user->columns['username'];
     $this->api_client->columns['enabled'] = 1;
 		$this->api_client->columns['asoc'] = $asoc;
-		$this->api_client->columns['created_at'] = strtotime("now");
-		$this->api_client->columns['updated_at'] = strtotime("now");
+		$this->api_client->columns['created_at'] = date("Y-m-d H:i:s");
+		$this->api_client->columns['updated_at'] = date("Y-m-d H:i:s");
 
     $id = $this->api_client->insert();
     if (is_numeric($id)){
