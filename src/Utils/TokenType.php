@@ -2,9 +2,8 @@
 
 namespace Geekcow\FonyAuth\Utils;
 
-abstract class TokenType {
-  const BASIC = 'Basic ';
-  const BEARER = 'Bearer ';
+abstract class TokenType
+{
+    public const BASIC = 'Basic ';
+    public const BEARER = 'Bearer ';
 }
-
-?>
