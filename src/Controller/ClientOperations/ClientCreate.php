@@ -10,47 +10,71 @@ namespace Geekcow\FonyAuth\Controller\ClientOperations;
 
 use Geekcow\FonyAuth\Model\ApiClient;
 use Geekcow\FonyAuth\Model\ApiClientScope;
+use Geekcow\FonyAuth\Model\ApiUser;
 use Geekcow\FonyAuth\Model\ApiUserAsoc;
+use Geekcow\FonyAuth\Model\ApiUserType;
 use Geekcow\FonyAuth\Utils\ConfigurationUtils;
-use Geekcow\FonyCore\Helpers\AllowCore;
+use Geekcow\FonyCore\Controller\CoreOperation;
 
-class ClientCreate
+class ClientCreate extends CoreOperation
 {
-    private $session;
-    private $validScope;
     private $api_client;
     private $api_client_scopes;
     private $api_user_asoc;
     private $config;
 
-    public $response;
-
     public function __construct($session)
     {
+        parent::__construct(new ApiClient(), $session);
         $this->config = ConfigurationUtils::getInstance();
-        $this->api_client = new ApiClient();
         $this->api_client_scopes = new ApiClientScope();
         $this->api_user_asoc = new ApiUserAsoc();
-
-
-        $this->validScope = AllowCore::ADMINISTRATOR();
-        $this->response = array();
-        $this->session = $session;
     }
 
     public function doCreate()
     {
+        $user = new ApiUser();
+        $client = '';
+        if ($user->fetch_id(array('username' => $this->session->username))) {
+            if ($this->validateApi($user, $client, $_POST['name'], 1, true)) {
+                $this->response['entity'] = array();
+                $this->response['entity']['client'] = $client;
+                $this->response['code'] = 200;
+            }
+        } else {
+            $this->response['type'] = 'error';
+            $this->response['title'] = 'Retrieve user';
+            $this->response['message'] = 'The following error has happened: ' . $this->model->err_data;
+            $this->response['code'] = 422;
+        }
     }
 
-    private function validateApi($user_type, $user, &$client, $asoc = 1)
+    public function doAssign()
     {
+        if ($this->validateAssociation($_POST['username'], $_POST['token'])) {
+            $this->response['entity'] = array();
+            $this->response['entity']['asociation'] = $this->api_user_asoc->columns;
+            $this->response['code'] = 200;
+        } else {
+            $message = 'The following error has happened: ' . $this->api_user_asoc->err_data;
+            $this->response['type'] = 'error';
+            $this->response['title'] = 'Client association validation';
+            $this->response['message'] = $message;
+            $this->response['code'] = 500;
+        }
+    }
+
+    public function validateApi($user, &$client, $name, $asoc = 1, $isUserClient = false)
+    {
+        $user_type = new ApiUserType();
         $scope_to_use = "";
+
         if ($user_type->fetch_id(array('id' => $user->columns['type']))) {
             $scope_to_use = $user_type->columns['scope'];
         } else {
             $this->response['type'] = 'error';
             $this->response['title'] = 'User type error';
-            $this->response['message'] = 'The following error has happened: ' . $this->user_type->err_data;
+            $this->response['message'] = 'The following error has happened: ' . $user_type->err_data;
             $this->response['code'] = 500;
             return false;
         }
@@ -58,18 +82,19 @@ class ClientCreate
         //Also will register the user to the global user authentication client
         $client = sha1($user->columns['username'] . $user->columns['email'] . date("Y-m-d H:i:s"));
         $secret = sha1($client . $this->config->getAppSecret());
-        $this->api_client->columns['client_id'] = $client;
-        $this->api_client->columns['client_secret'] = $secret;
-        $this->api_client->columns['email'] = $user->columns['email'];
-        $this->api_client->columns['user_id'] = $user->columns['username'];
-        $this->api_client->columns['enabled'] = 1;
-        $this->api_client->columns['asoc'] = $asoc;
-        $this->api_client->columns['created_at'] = date("Y-m-d H:i:s");
-        $this->api_client->columns['updated_at'] = date("Y-m-d H:i:s");
+        $this->model->columns['client_id'] = $client;
+        $this->model->columns['client_secret'] = $secret;
+        $this->model->columns['name'] = $name;
+        $this->model->columns['email'] = $user->columns['email'];
+        $this->model->columns['user_id'] = $user->columns['username'];
+        $this->model->columns['enabled'] = 1;
+        $this->model->columns['asoc'] = $asoc;
+        $this->model->columns['created_at'] = date("Y-m-d H:i:s");
+        $this->model->columns['updated_at'] = date("Y-m-d H:i:s");
 
-        $id = $this->api_client->insert();
+        $id = $this->model->insert();
         if (is_numeric($id)) {
-            if ($this->api_client->fetch_id(array('client_id' => $client))) {
+            if ($this->model->fetch_id(array('client_id' => $client))) {
                 $this->api_client_scopes->columns['id_client'] = $client;
                 $this->api_client_scopes->columns['id_scope'] = $scope_to_use;
                 $idx = $this->api_client_scopes->insert();
@@ -79,14 +104,13 @@ class ClientCreate
                             array('id_client' => $client, 'id_scope' => $scope_to_use)
                         )
                     ) {
-                        if (
-                            $this->validateAssociation($user->columns['username'], $client) &&
-                            $this->validateAssociation($user->columns['username'], $this->user_token)
-                        ) {
-                            return true;
-                        } else {
-                            return false;
+                        if ($isUserClient) {
+                            return $this->validateAssociation($user->columns['username'], $client);
                         }
+                        return (
+                            $this->validateAssociation($user->columns['username'], $client) &&
+                            $this->validateAssociation($user->columns['username'], $this->config->getUserClient())
+                        );
                     } else {
                         $message = 'The following error has happened: ' . $this->api_client_scopes->err_data;
                         $this->response['type'] = 'error';
@@ -113,7 +137,7 @@ class ClientCreate
         } else {
             $this->response['type'] = 'error';
             $this->response['title'] = 'Create Token';
-            $this->response['message'] = 'The following error has happened: ' . $this->api_client->err_data;
+            $this->response['message'] = 'The following error has happened: ' . $this->model->err_data;
             $this->response['code'] = 422;
             return false;
         }
@@ -134,11 +158,5 @@ class ClientCreate
             $this->response['code'] = 500;
             return false;
         }
-    }
-
-
-    public function setValidScope($scope)
-    {
-        $this->validScope = $scope;
     }
 }

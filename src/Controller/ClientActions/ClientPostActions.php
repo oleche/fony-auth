@@ -17,18 +17,27 @@ class ClientPostActions extends CoreActions implements CoreActionsInterface
     //Client creation
     public function default()
     {
+        if (!$this->validateScope($this->session->session_scopes)) {
+            return false;
+        }
+
         if ($this->validate_fields($_POST, 'api/client/', 'POST')) {
             $client_post = new ClientCreate($this->session);
-            $client_post->setValidScope($this->allowed_roles);
             $client_post->doCreate();
-            $this->response = $client_post->response;
+            $this->response = $client_post->getResponse();
+            return true;
         }
-        return true;
+        return false;
     }
 
     public function assign()
     {
         if ($this->validate_fields($_POST, 'api/client/assign', 'POST')) {
+            $client_post = new ClientCreate($this->session);
+            $client_post->doAssign();
+            $this->response = $client_post->getResponse();
+            return true;
         }
+        return false;
     }
 }

@@ -13,7 +13,7 @@ use Geekcow\FonyCore\Controller\ApiMethods;
 use Geekcow\FonyCore\Controller\BaseController;
 use Geekcow\FonyCore\Helpers\AllowCore;
 
-class UserController extends BaseController implements ApiMethods
+class ClientController extends BaseController implements ApiMethods
 {
     public function __construct()
     {
@@ -27,6 +27,14 @@ class UserController extends BaseController implements ApiMethods
         if (!$this->validation_fail) {
             if (is_array($args) && empty($args)) {
                 $this->setExecutableClass(new ClientPostActions());
+                if (is_array($args) && empty($args)) {
+                    $this->setActionId($verb);
+                    $this->execute();
+                } else {
+                    $this->setActionId($verb);
+                    $this->setActionVerb($args[0]);
+                    $this->execute(true);
+                }
                 $this->setActionVerb($verb);
                 $this->execute();
             } else {
@@ -117,9 +125,18 @@ class UserController extends BaseController implements ApiMethods
     public function doDELETE($args = array(), $verb = null)
     {
         if (!$this->validation_fail) {
-            $this->response['code'] = 200;
-            $this->response['msg'] = "OK";
+            if (is_array($args) && empty($args)) {
+                $this->setExecutableClass(new ClientDeleteActions());
+                $this->setActionVerb($verb);
+                $this->execute();
+            } else {
+                $this->response['type'] = 'error';
+                $this->response['title'] = 'User';
+                $this->response['code'] = 404;
+                $this->response['message'] = "Invalid URL";
+            }
         }
+        $this->filter_response(['notes']);
     }
 
     private function validateArgsAndVerb($args, $verb)

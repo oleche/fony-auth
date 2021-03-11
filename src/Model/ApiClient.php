@@ -15,6 +15,7 @@ class ApiClient extends Entity
         $this->api_client = [
             'client_id' => ['type' => 'string', 'length' => 64, 'pk' => true],
             'client_secret' => ['type' => 'string', 'length' => 64],
+            'name' => ['type' => 'string'],
             'email' => ['type' => 'string'],
             'user_id' => ['type' => 'string', 'length' => 70, 'foreign' => array('username', new ApiUser())],
             'created_at' => ['type' => 'datetime'],

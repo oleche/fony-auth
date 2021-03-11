@@ -3,6 +3,7 @@
 namespace Geekcow\FonyAuth\Controller\UserActions;
 
 use Geekcow\FonyAuth\Controller\UserOperations\UserPut;
+use Geekcow\FonyAuth\Controller\UserOperations\UserUpload;
 use Geekcow\FonyCore\Controller\CoreActions;
 use Geekcow\FonyCore\Controller\CoreActionsInterface;
 
@@ -14,7 +15,7 @@ class UserPutActions extends CoreActions implements CoreActionsInterface
         parent::__construct();
     }
 
-    public function default($id)
+    public function default($id = null)
     {
         if ($this->validate_fields($_POST, 'api/user/:id', 'PUT')) {
             $user_put = new UserPut($this->session, $id);
@@ -30,7 +31,7 @@ class UserPutActions extends CoreActions implements CoreActionsInterface
         if ($this->validate_upload($this->file)) {
             $user_put = new UserUpload($this->session, $id);
             $user_put->setValidScope($this->allowed_roles);
-            $user_put->put($file);
+            $user_put->put($this->file);
             $this->response = $user_put->response;
         }
     }
