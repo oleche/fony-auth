@@ -21,7 +21,7 @@ class ClientPostActions extends CoreActions implements CoreActionsInterface
             return false;
         }
 
-        if ($this->validate_fields($_POST, 'api/client/', 'POST')) {
+        if ($this->validateFields($_POST, 'api/client/', 'POST')) {
             $client_post = new ClientCreate($this->session);
             $client_post->doCreate();
             $this->response = $client_post->getResponse();
@@ -32,7 +32,7 @@ class ClientPostActions extends CoreActions implements CoreActionsInterface
 
     public function assign()
     {
-        if ($this->validate_fields($_POST, 'api/client/assign', 'POST')) {
+        if ($this->validateFields($_POST, 'api/client/assign', 'POST')) {
             $client_post = new ClientCreate($this->session);
             $client_post->doAssign();
             $this->response = $client_post->getResponse();

@@ -17,7 +17,7 @@ class UserPutActions extends CoreActions implements CoreActionsInterface
 
     public function default($id = null)
     {
-        if ($this->validate_fields($_POST, 'api/user/:id', 'PUT')) {
+        if ($this->validateFields($_POST, 'api/user/:id', 'PUT')) {
             $user_put = new UserPut($this->session, $id);
             $user_put->setValidScope($this->allowed_roles);
             $user_put->putUser();
@@ -28,7 +28,7 @@ class UserPutActions extends CoreActions implements CoreActionsInterface
 
     public function upload($id)
     {
-        if ($this->validate_upload($this->file)) {
+        if ($this->validateUpload($this->file)) {
             $user_put = new UserUpload($this->session, $id);
             $user_put->setValidScope($this->allowed_roles);
             $user_put->put($this->file);
@@ -38,7 +38,7 @@ class UserPutActions extends CoreActions implements CoreActionsInterface
 
     public function password($id)
     {
-        if ($this->validate_fields($_POST, 'api/user/:id/password', 'PUT')) {
+        if ($this->validateFields($_POST, 'api/user/:id/password', 'PUT')) {
             $status_put = new UserPut($this->session, $id);
             $status_put->setValidScope($this->allowed_roles);
             $status_put->changePassword();

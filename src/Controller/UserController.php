@@ -35,7 +35,7 @@ class UserController extends BaseController implements ApiMethods
             }
 
             if (is_array($args) && empty($args)) {
-                if ($this->validate_fields($_POST, 'v1/user', 'POST')) {
+                if ($this->validateFields($_POST, 'v1/user', 'POST')) {
                     $user_create = new UserCreate(new ApiUser(), $this->session);
                     $user_create->createUser();
                     //TODO: Broadcaster idea: allow the controller to implement classes that will serve as

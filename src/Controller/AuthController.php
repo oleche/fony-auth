@@ -39,7 +39,7 @@ class AuthController extends CoreController implements ApiMethods
                 } else {
                     if ($verb == 'refresh') {
                         if ($this->auth_handler->validateBasicToken($token)) {
-                            if ($this->validate_fields($params, 'v1/authenticate/refresh', 'POST')) {
+                            if ($this->validateFields($params, 'v1/authenticate/refresh', 'POST')) {
                                 if (!$this->auth_handler->validateRefreshToken($params['refresh_token'])) {
                                     $this->err = $this->auth_handler->getErr();
                                     $this->buildErrorSet();
@@ -65,7 +65,7 @@ class AuthController extends CoreController implements ApiMethods
                             return false;
                         }
                     } else {
-                        if ($this->validate_fields($params, 'v1/authenticate', 'POST')) {
+                        if ($this->validateFields($params, 'v1/authenticate', 'POST')) {
                             $this->auth_handler->setScopes(
                                 (isset($params['scope']) && $params['scope'] != '') ? $params['scope'] : ''
                             );

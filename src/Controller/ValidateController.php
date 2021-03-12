@@ -37,7 +37,7 @@ class ValidateController extends CoreController implements ApiMethods
                 if (TokenUtils::validateTokenSanity($token, TokenType::BASIC)) {
                     $token = TokenUtils::sanitizeToken($token, TokenType::BASIC);
                     if ($this->auth_handler->validateBasicToken($token)) {
-                        if ($this->validate_fields($params, 'v1/validate', 'POST')) {
+                        if ($this->validateFields($params, 'v1/validate', 'POST')) {
                             if (!$this->auth_handler->validateBearerToken($params['token'])) {
                                 $this->err = $this->auth_handler->getErr();
                                 $this->buildErrorSet();
