@@ -55,7 +55,7 @@ class UserController extends BaseController implements ApiMethods
                 $this->response['message'] = "Invalid URL";
             }
         }
-        $this->filter_response(['notes']);
+        $this->filterResponse(['notes']);
     }
 
     //READ INFORMATION
@@ -79,7 +79,7 @@ class UserController extends BaseController implements ApiMethods
                 $this->execute(true);
             }
         }
-        //$this->filter_response(['notes']);
+
         if (
             $this->session->username != $verb &&
             !AllowCore::isAllowed(
@@ -87,11 +87,11 @@ class UserController extends BaseController implements ApiMethods
                 $this->allowed_roles
             )
         ) {
-            $this->filter_response(
+            $this->filterResponse(
                 ['notes', 'password', 'email', 'avatar_path', 'phone', 'enabled', 'verification', 'updated_at']
             );
         } else {
-            $this->filter_response(['notes', 'password']);
+            $this->filterResponse(['notes', 'password']);
         }
     }
 
@@ -121,7 +121,7 @@ class UserController extends BaseController implements ApiMethods
                 $this->allowed_roles
             )
         ) {
-            $this->filter_response(
+            $this->filterResponse(
                 [
                     'notes',
                     'password',
@@ -135,7 +135,7 @@ class UserController extends BaseController implements ApiMethods
                 ]
             );
         } else {
-            $this->filter_response(['notes', 'password']);
+            $this->filterResponse(['notes', 'password']);
         }
     }
 
@@ -162,6 +162,6 @@ class UserController extends BaseController implements ApiMethods
                 $this->response['message'] = "Invalid URL";
             }
         }
-        $this->filter_response(['notes']);
+        $this->filterResponse(['notes']);
     }
 }

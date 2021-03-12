@@ -14,10 +14,10 @@ use Geekcow\FonyAuth\Model\ApiScope;
 use Geekcow\FonyAuth\Model\ApiToken;
 use Geekcow\FonyAuth\Model\ApiUser;
 use Geekcow\FonyAuth\Model\ApiUserAsoc;
-use Geekcow\FonyCore\Utils\Authenticator;
+use Geekcow\FonyCore\Utils\AuthenticatorInterface;
 use Geekcow\FonyCore\Utils\TokenUtils;
 
-class AuthUtils implements Authenticator
+class AuthUtils implements AuthenticatorInterface
 {
     private $err;
     private $api_client;
