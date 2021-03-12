@@ -19,12 +19,14 @@ use Geekcow\FonyCore\Utils\TokenUtils;
 class AuthController extends CoreController implements ApiMethods
 {
     private $auth_handler;
+    private $err;
 
     public function __construct()
     {
         $configfile = ConfigurationUtils::getInstance(MY_DOC_ROOT . "/src/config/config.ini");
         parent::__construct($configfile);
         $this->response = array();
+        $this->err = '';
         $this->auth_handler = new AuthUtils($configfile);
     }
 
@@ -53,8 +55,8 @@ class AuthController extends CoreController implements ApiMethods
                                 $this->response['refresh_token'] = $this->auth_handler->getApiToken(
                                 )->columns['refresh_token'];
                                 $this->response['expires'] = (
-                                    (strtotime($this->auth_handler->getApiToken()->columns['updated_at']) * 1000)
-                                    + $this->auth_handler->getApiToken()->columns['expires']
+                                        (strtotime($this->auth_handler->getApiToken()->columns['updated_at']) * 1000)
+                                        + $this->auth_handler->getApiToken()->columns['expires']
                                     ) - (time() * 1000);
                                 return true;
                             } else {
@@ -105,8 +107,8 @@ class AuthController extends CoreController implements ApiMethods
                                 $this->response['refresh_token'] = $this->auth_handler->getApiToken(
                                 )->columns['refresh_token'];
                                 $this->response['expires'] = (
-                                    (strtotime($this->auth_handler->getApiToken()->columns['updated_at']) * 1000) +
-                                    $this->auth_handler->getApiToken()->columns['expires']
+                                        (strtotime($this->auth_handler->getApiToken()->columns['updated_at']) * 1000) +
+                                        $this->auth_handler->getApiToken()->columns['expires']
                                     ) - (time() * 1000);
                                 return true;
                             } else {

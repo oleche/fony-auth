@@ -4,7 +4,7 @@
     "type": "library",
     "keywords": ["fony", "fony-core", "fony-auth"],
     "homepage": "https://github.com/oleche/fony-auth",
-    "version": "0.0.7",
+    "version": "0.0.8",
     "require": {
         "psr/log": "1.1.3",
         "geekcow/dbcore": "^1.0",

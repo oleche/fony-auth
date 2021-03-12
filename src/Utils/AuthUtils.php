@@ -103,13 +103,20 @@ class AuthUtils implements AuthenticatorInterface
     {
         $token64 = base64_decode($token);
         $tokens = explode(":", $token64);
-        $result = $this->api_client->fetch("client_id = '$tokens[0]' AND client_secret = '$tokens[1]' AND enabled = 1");
+        $result = (array)$this->api_client->fetch(
+            "client_id = '$tokens[0]' AND client_secret = '$tokens[1]' AND enabled = 1"
+        );
         if (count($result) == 1) {
-            $this->client_id = $result[0]->columns['client_id'];
-            $this->email = $result[0]->columns['email'];
-            $this->username = $result[0]->columns['user_id']['username'];
-            $this->asoc = $result[0]->columns['asoc'];
-            return true;
+            if (isset($result[0]->columns)) {
+                $this->client_id = $result[0]->columns['client_id'];
+                $this->email = $result[0]->columns['email'];
+                $this->username = $result[0]->columns['user_id']['username'];
+                $this->asoc = $result[0]->columns['asoc'];
+                return true;
+            } else {
+                $this->err = 'Client fetch error';
+                return false;
+            }
         } else {
             $this->err = 'Client not found';
             return false;
@@ -181,7 +188,7 @@ class AuthUtils implements AuthenticatorInterface
                     $this->username = trim($token[3]);
                     $this->client_id = $result[0]->columns['client_id']['client_id'];
                     $this->expiration = (
-                        (strtotime($result[0]->columns['updated_at']) * 1000) + $result[0]->columns['expires']) -
+                            (strtotime($result[0]->columns['updated_at']) * 1000) + $result[0]->columns['expires']) -
                         (time() * 1000);
                     return true;
                 } else {
