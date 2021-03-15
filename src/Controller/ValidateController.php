@@ -51,6 +51,7 @@ class ValidateController extends CoreController implements ApiMethods
                         $this->response['active'] = true;
                         $this->response['client_id'] = $this->auth_handler->getClientId();
                         $this->response['scope'] = $this->auth_handler->getScopes();
+                        $this->response['scope_level'] = $this->auth_handler->getScopeLevel();
                         $this->response['username'] = $this->auth_handler->getUsername();
                         $this->response['exp'] = $this->auth_handler->getExpiration();
                         return true;

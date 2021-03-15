@@ -34,6 +34,7 @@ class AuthUtils implements AuthenticatorInterface
     private $expiration;
     private $asoc;
     private $scopes;
+    private $scope_level;
     private $config;
 
     public function __construct($configfile = MY_DOC_ROOT . "/src/config/config.ini")
@@ -93,6 +94,14 @@ class AuthUtils implements AuthenticatorInterface
     }
 
     /**
+     * @return mixed
+     */
+    public function getScopeLevel()
+    {
+        return $this->scope_level;
+    }
+
+    /**
      * Validates a basic token to identify if its related to a valid and active
      * client
      *
@@ -140,6 +149,7 @@ class AuthUtils implements AuthenticatorInterface
         if (count($result) == 1) {
             if ($result[0]->columns['client_id']['client_id'] == $this->client_id) {
                 $this->scopes = $result[0]->columns['scopes'];
+                $this->scope_level = $result[0]->columns['scope_level'];
                 $result[0]->columns['enabled'] = 0;
                 $result[0]->columns['blacklisted'] = 1;
                 $result[0]->columns['client_id'] = $result[0]->columns['client_id']['client_id'];
@@ -162,6 +172,7 @@ class AuthUtils implements AuthenticatorInterface
      *   client_id
      *   timestamp - created at
      *   scopes
+     *   scope_level
      *   username
      * @return BOOLEAN the user and password matches
      *
@@ -179,13 +190,14 @@ class AuthUtils implements AuthenticatorInterface
                 TokenUtils::decrypt(TokenUtils::base64UrlDecode($token), $this->config->getAppSecret())
             );
             $token = explode('|', $token);
-            if (count($token) == 4) {
+            if (count($token) == 5) {
                 if (
                     ((strtotime($result[0]->columns['updated_at']) * 1000) + $result[0]->columns['expires']) >
                     (time() * 1000)
                 ) {
                     $this->scopes = $token[2];
-                    $this->username = trim($token[3]);
+                    $this->scope_level = $token[3];
+                    $this->username = trim($token[4]);
                     $this->client_id = $result[0]->columns['client_id']['client_id'];
                     $this->expiration = (
                             (strtotime($result[0]->columns['updated_at']) * 1000) + $result[0]->columns['expires']) -
@@ -265,22 +277,26 @@ class AuthUtils implements AuthenticatorInterface
             $this->err = "no scopes selected";
         }
 
+        $this->scope_level = 10;
         foreach ($scopes_arr as $value) {
             if ($this->scope->fetch_id(array("name" => $value))) {
+                if ($this->scope->columns['level'] < $this->scope_level) {
+                    $this->scope_level = $this->scope->columns['level'];
+                }
                 switch ($grant_type) {
                     case GrantTypes::PASSWORD:
                         $retval = ($retval && true);
                         break;
                     case GrantTypes::CLIENT_CREDENTIAL:
-                            $result = $this->api_client_scope->fetch(
-                                "id_client = '$this->client_id' AND id_scope = '" . $this->scope->columns['name'] . "'"
-                            );
-                            if (count($result) > 0) {
-                                $retval = ($retval && true);
-                            } else {
-                                $retval = ($retval && false);
-                                $this->err = "invalid scope for client";
-                            }
+                        $result = $this->api_client_scope->fetch(
+                            "id_client = '$this->client_id' AND id_scope = '" . $this->scope->columns['name'] . "'"
+                        );
+                        if (count($result) > 0) {
+                            $retval = ($retval && true);
+                        } else {
+                            $retval = ($retval && false);
+                            $this->err = "invalid scope for client";
+                        }
                         break;
                     default:
                         $this->err = 'Bad grant type to evaluate';
@@ -347,7 +363,7 @@ class AuthUtils implements AuthenticatorInterface
         } else {
             $timestamp = time();
             $token = TokenUtils::encrypt(
-                $this->client_id . '|' . $timestamp . '|' . $this->scopes . '|' . $this->username,
+                $this->client_id . '|' . $timestamp . '|' . $this->scopes . '|' . $this->scope_level . '|' . $this->username,
                 $this->config->getAppSecret()
             );
             $token = TokenUtils::base64UrlEncode($token);
@@ -363,6 +379,7 @@ class AuthUtils implements AuthenticatorInterface
             $this->api_token->columns['refresh_token'] = $refresh_token;
             $this->api_token->columns['client_id'] = $this->client_id;
             $this->api_token->columns['scopes'] = $this->scopes;
+            $this->api_token->columns['scope_level'] = $this->scope_level;
             $this->api_token->columns['timestamp'] = $timestamp;
             $insertResult = $this->api_token->insert();
             if (is_numeric($insertResult)) {
@@ -405,11 +422,11 @@ class AuthUtils implements AuthenticatorInterface
                     )
                 );
                 $token = explode('|', $token);
-                if (count($token) == 4) {
+                if (count($token) == 5) {
                     $token[2] = (string)$token[2];
-                    $token[3] = (string)$token[3];
+                    $token[4] = (string)$token[4];
 
-                    if (trim($this->username) == "" || trim($this->username) == trim($token[3])) {
+                    if (trim($this->username) == "" || trim($this->username) == trim($token[4])) {
                         if (
                             (trim($this->scopes) == trim($token[2])) &&
                             (
@@ -448,6 +465,19 @@ class AuthUtils implements AuthenticatorInterface
         return $last;
     }
 
+    private function validateScopeLevel(){
+        $scopes_arr = explode(',', $this->scopes);
+
+        $this->scope_level = 10;
+        foreach ($scopes_arr as $value) {
+            if ($this->scope->fetch_id(array("name" => $value))) {
+                if ($this->scope->columns['level'] < $this->scope_level) {
+                    $this->scope_level = $this->scope->columns['level'];
+                }
+            }
+        }
+    }
+
     /**
      * Performs the login validation of the user and password
      *
@@ -456,23 +486,24 @@ class AuthUtils implements AuthenticatorInterface
      */
     public function validateLogin($params = array())
     {
-        $params['email'] = md5($params['email']);
+        $params['username'] = md5($params['username']);
         $result = array();
         $pass = sha1($params['password']);
         if (
             $this->user->fetch_id(
-                array('username' => $params['email']),
+                array('username' => $params['username']),
                 null,
                 true,
                 " password = '$pass' AND enabled = 1 "
             )
         ) {
-            if ($this->validatePasswordGrantScopes($this->user->columns['type']['scope'])){
+            if ($this->validatePasswordGrantScopes($this->user->columns['type']['scope'])) {
                 if (
-                $this->api_user_asoc->fetch_id(
-                    array('client_id' => $this->client_id, 'username' => $this->user->columns['username'])
-                )
+                    $this->api_user_asoc->fetch_id(
+                        array('client_id' => $this->client_id, 'username' => $this->user->columns['username'])
+                    )
                 ) {
+                    $this->validateScopeLevel();
                     $this->username = trim($this->user->columns['username']);
                     return true;
                 } else {
@@ -483,7 +514,10 @@ class AuthUtils implements AuthenticatorInterface
                 return false;
             }
         } else {
-            if ($this->user->fetch_id(array('username' => $params['email']), null, true, " enabled = 0 ")) {
+            if (
+                $this->user
+                    ->fetch_id(array('username' => $params['username']), null, true, " enabled = 0 ")
+            ) {
                 $this->err = 'User disabled';
                 return false;
             } else {

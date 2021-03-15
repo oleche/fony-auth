@@ -29,6 +29,7 @@ class ApiToken extends Entity
             ],
             'updated_at' => ['type' => 'datetime'],
             'scopes' => ['type' => 'string', 'length' => 250],
+            'scope_level' => ['type' => 'int'],
             'timestamp' => ['type' => 'string', 'length' => 128],
         ];
         parent::__construct($this->api_token, get_class($this), $config->getFilename());

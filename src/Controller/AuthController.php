@@ -77,12 +77,10 @@ class AuthController extends CoreController implements ApiMethods
                             ) {
                                 switch ($params['grant_type']) {
                                     case GrantTypes::PASSWORD:
-                                        if ($this->auth_handler->getAsoc() == 1) {
-                                            if (!$this->auth_handler->validateLogin($params)) {
-                                                $this->err = $this->auth_handler->getErr();
-                                                $this->buildErrorSet();
-                                                return false;
-                                            }
+                                        if (!$this->auth_handler->validateLogin($params)) {
+                                            $this->err = $this->auth_handler->getErr();
+                                            $this->buildErrorSet();
+                                            return false;
                                         }
                                         break;
                                     case GrantTypes::CLIENT_CREDENTIAL:
