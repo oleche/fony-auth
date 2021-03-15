@@ -73,7 +73,7 @@ class AuthController extends CoreController implements ApiMethods
                             );
                             if (
                                 $this->auth_handler->validateBasicToken($token) &&
-                                $this->auth_handler->validateScopes()
+                                $this->auth_handler->validateScopes($params['grant_type'])
                             ) {
                                 switch ($params['grant_type']) {
                                     case GrantTypes::PASSWORD:
@@ -104,8 +104,8 @@ class AuthController extends CoreController implements ApiMethods
                                 $this->response['access_token'] = $this->auth_handler->generateToken();
                                 $this->response['token_type'] = 'bearer';
                                 $this->response['username'] = $this->auth_handler->getUsername();
-                                $this->response['refresh_token'] = $this->auth_handler->getApiToken(
-                                )->columns['refresh_token'];
+                                $this->response['refresh_token'] = $this->auth_handler
+                                    ->getApiToken()->columns['refresh_token'];
                                 $this->response['expires'] = (
                                         (strtotime($this->auth_handler->getApiToken()->columns['updated_at']) * 1000) +
                                         $this->auth_handler->getApiToken()->columns['expires']

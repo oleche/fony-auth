@@ -255,7 +255,7 @@ class AuthUtils implements AuthenticatorInterface
      * @return BOOLEAN if found
      *
      */
-    public function validateScopes()
+    public function validateScopes($grant_type)
     {
         $retval = true;
 
@@ -267,18 +267,63 @@ class AuthUtils implements AuthenticatorInterface
 
         foreach ($scopes_arr as $value) {
             if ($this->scope->fetch_id(array("name" => $value))) {
-                $result = $this->api_client_scope->fetch(
-                    "id_client = '$this->client_id' AND id_scope = '" . $this->scope->columns['name'] . "'"
-                );
-                if (count($result) > 0) {
-                    $retval = ($retval && true);
-                } else {
-                    $retval = ($retval && false);
-                    $this->err = "invalid scope for client";
+                switch ($grant_type) {
+                    case GrantTypes::PASSWORD:
+                        $retval = ($retval && true);
+                        break;
+                    case GrantTypes::CLIENT_CREDENTIAL:
+                            $result = $this->api_client_scope->fetch(
+                                "id_client = '$this->client_id' AND id_scope = '" . $this->scope->columns['name'] . "'"
+                            );
+                            if (count($result) > 0) {
+                                $retval = ($retval && true);
+                            } else {
+                                $retval = ($retval && false);
+                                $this->err = "invalid scope for client";
+                            }
+                        break;
+                    default:
+                        $this->err = 'Bad grant type to evaluate';
+                        $retval = ($retval && false);
+                        break;
                 }
             } else {
                 $this->err = "scope '$value' not found";
                 $retval = ($retval && false);
+            }
+        }
+        return $retval;
+    }
+
+    /**
+     * Identifies if the scopes provided do exists in the database and are assigned
+     * to the required username or client
+     *
+     * @return BOOLEAN if found
+     *
+     */
+    public function validatePasswordGrantScopes($user_scopes)
+    {
+        $retval = true;
+
+        $request_scopes = explode(',', $this->scopes);
+        if (count($request_scopes) <= 0) {
+            $retval = ($retval && false);
+            $this->err = "no scopes selected";
+        }
+
+        $user_scopes = explode(',', $user_scopes);
+        if (count($user_scopes) <= 0) {
+            $this->err = "no scopes available for user";
+            return false;
+        }
+
+        foreach ($request_scopes as $value) {
+            if (in_array($value, $user_scopes)){
+                $retval = ($retval && true);
+            }else{
+                $retval = ($retval && false);
+                $this->err = "invalid scope '$value' for client";
             }
         }
         return $retval;
@@ -360,11 +405,11 @@ class AuthUtils implements AuthenticatorInterface
                     )
                 );
                 $token = explode('|', $token);
-                $token[2] = (string)$token[2];
-                $token[3] = (string)$token[3];
+                if (count($token) == 4) {
+                    $token[2] = (string)$token[2];
+                    $token[3] = (string)$token[3];
 
-                if (trim($this->username) == "" || trim($this->username) == trim($token[3])) {
-                    if (count($token) == 4) {
+                    if (trim($this->username) == "" || trim($this->username) == trim($token[3])) {
                         if (
                             (trim($this->scopes) == trim($token[2])) &&
                             (
@@ -390,12 +435,11 @@ class AuthUtils implements AuthenticatorInterface
                             return false;
                         }
                     } else {
-                        $this->err = 'Malformed token';
-                        return false;
+                        $last = false;
                     }
                 } else {
-                    echo 'coso';
-                    $last = false;
+                    $this->err = 'Malformed token';
+                    return false;
                 }
             } else {
                 $last = false;
@@ -423,15 +467,19 @@ class AuthUtils implements AuthenticatorInterface
                 " password = '$pass' AND enabled = 1 "
             )
         ) {
-            if (
+            if ($this->validatePasswordGrantScopes($this->user->columns['type']['scope'])){
+                if (
                 $this->api_user_asoc->fetch_id(
                     array('client_id' => $this->client_id, 'username' => $this->user->columns['username'])
                 )
-            ) {
-                $this->username = trim($this->user->columns['username']);
-                return true;
+                ) {
+                    $this->username = trim($this->user->columns['username']);
+                    return true;
+                } else {
+                    $this->err = 'User not associated';
+                    return false;
+                }
             } else {
-                $this->err = 'User not associated';
                 return false;
             }
         } else {

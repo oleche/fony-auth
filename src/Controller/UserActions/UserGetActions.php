@@ -25,7 +25,7 @@ class UserGetActions extends CoreActions implements CoreActionsInterface
 
         $model = new ApiUser();
         $user_get = new GenericGet($model, $this->session, $id);
-        $user_get->getUser();
+        $user_get->get();
         $this->response = $user_get->getResponse();
         $this->pagination_link = $user_get->getPaginationLink();
     }
