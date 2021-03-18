@@ -27,44 +27,39 @@ class ValidateController extends CoreController implements ApiMethods
         $this->auth_handler = new AuthUtils($configfile);
     }
 
-    public function doPOST($token = null, $params = array())
+    public function doPOST($token = null)
     {
         try {
-            if (is_array($params) && empty($params)) {
-                $this->response['code'] = 501;
-                $this->response['msg'] = "Not Implemented";
-            } else {
-                if (TokenUtils::validateTokenSanity($token, TokenType::BASIC)) {
-                    $token = TokenUtils::sanitizeToken($token, TokenType::BASIC);
-                    if ($this->auth_handler->validateBasicToken($token)) {
-                        if ($this->validateFields($params, 'v1/validate', 'POST')) {
-                            if (!$this->auth_handler->validateBearerToken($params['token'])) {
-                                $this->err = $this->auth_handler->getErr();
-                                $this->buildErrorSet();
-                                return false;
-                            }
-                        } else {
+            if (TokenUtils::validateTokenSanity($token, TokenType::BASIC)) {
+                $token = TokenUtils::sanitizeToken($token, TokenType::BASIC);
+                if ($this->auth_handler->validateBasicToken($token)) {
+                    if ($this->validateFields($this->request, 'v1/validate', 'POST')) {
+                        if (!$this->auth_handler->validateBearerToken($params['token'])) {
+                            $this->err = $this->auth_handler->getErr();
+                            $this->buildErrorSet();
                             return false;
                         }
-
-                        $this->response['code'] = 200;
-                        $this->response['active'] = true;
-                        $this->response['client_id'] = $this->auth_handler->getClientId();
-                        $this->response['scope'] = $this->auth_handler->getScopes();
-                        $this->response['scope_level'] = $this->auth_handler->getScopeLevel();
-                        $this->response['username'] = $this->auth_handler->getUsername();
-                        $this->response['exp'] = $this->auth_handler->getExpiration();
-                        return true;
                     } else {
-                        $this->buildErrorSet();
                         return false;
                     }
+
+                    $this->response['code'] = 200;
+                    $this->response['active'] = true;
+                    $this->response['client_id'] = $this->auth_handler->getClientId();
+                    $this->response['scope'] = $this->auth_handler->getScopes();
+                    $this->response['scope_level'] = $this->auth_handler->getScopeLevel();
+                    $this->response['username'] = $this->auth_handler->getUsername();
+                    $this->response['exp'] = $this->auth_handler->getExpiration();
+                    return true;
                 } else {
-                    $this->response['type'] = 'error';
-                    $this->response['code'] = 401;
-                    $this->response['message'] = 'Malformed token';
+                    $this->buildErrorSet();
                     return false;
                 }
+            } else {
+                $this->response['type'] = 'error';
+                $this->response['code'] = 401;
+                $this->response['message'] = 'Malformed token';
+                return false;
             }
         } catch (\Exception $e) {
             $this->response['type'] = 'error';

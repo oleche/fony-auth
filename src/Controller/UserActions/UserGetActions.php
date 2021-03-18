@@ -25,7 +25,7 @@ class UserGetActions extends CoreActions implements CoreActionsInterface
 
         $model = new ApiUser();
         $user_get = new GenericGet($model, $this->session, $id);
-        if ($this->session->scope_level > 1){
+        if ($this->session->session_level > 1){
             $user_get->checkUser();
         }
         $user_get->get();
@@ -40,7 +40,7 @@ class UserGetActions extends CoreActions implements CoreActionsInterface
         }
 
         $user_count = new GenericCount(new ApiUser(), $this->session);
-        if ($this->session->scope_level > 1){
+        if ($this->session->session_level > 1){
             $user_count->checkUser();
         }
         $user_count->setValidationExclusion($this->allowed_roles);
@@ -55,7 +55,7 @@ class UserGetActions extends CoreActions implements CoreActionsInterface
         }
 
         $user_count = new GenericCount(new ApiUser(), $this->session);
-        if ($this->session->scope_level > 1){
+        if ($this->session->session_level > 1){
             $user_count->checkUser();
         }
         $user_count->setGroupingArray(array('created_at' => 'DAY(created_at)'));

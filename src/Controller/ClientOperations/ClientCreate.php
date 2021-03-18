@@ -67,10 +67,10 @@ class ClientCreate extends CoreOperation
     public function validateApi($user, &$client, $name, $asoc = 1, $isUserClient = false)
     {
         $user_type = new ApiUserType();
-        $scope_to_use = "";
+        $scopes_to_use = array();
 
         if ($user_type->fetch_id(array('id' => $user->columns['type']))) {
-            $scope_to_use = $user_type->columns['scope'];
+            $scopes_to_use = explode(',', $user_type->columns['scope']);
         } else {
             $this->response['type'] = 'error';
             $this->response['title'] = 'User type error';
@@ -95,38 +95,45 @@ class ClientCreate extends CoreOperation
         $id = $this->model->insert();
         if (is_numeric($id)) {
             if ($this->model->fetch_id(array('client_id' => $client))) {
-                $this->api_client_scopes->columns['id_client'] = $client;
-                $this->api_client_scopes->columns['id_scope'] = $scope_to_use;
-                $idx = $this->api_client_scopes->insert();
-                if (is_numeric($idx)) {
-                    if (
-                        $this->api_client_scopes->fetch_id(
-                            array('id_client' => $client, 'id_scope' => $scope_to_use)
-                        )
-                    ) {
-                        if ($isUserClient) {
-                            return $this->validateAssociation($user->columns['username'], $client);
+                $all_scopes_created = false;
+                foreach ($scopes_to_use as $scope_to_use) {
+                    $this->api_client_scopes->columns['id_client'] = $client;
+                    $this->api_client_scopes->columns['id_scope'] = $scope_to_use;
+                    $idx = $this->api_client_scopes->insert();
+                    if (is_numeric($idx)) {
+                        if (
+                            $this->api_client_scopes->fetch_id(
+                                array('id_client' => $client, 'id_scope' => $scope_to_use)
+                            )
+                        ) {
+                            $all_scopes_created = true;
+                        } else {
+                            $message = 'The following error has happened: ' . $this->api_client_scopes->err_data;
+                            $this->response['type'] = 'error';
+                            $this->response['title'] = 'Scope association validation';
+                            $this->response['message'] = $message;
+                            $this->response['code'] = 500;
+                            return false;
                         }
-                        return (
-                            $this->validateAssociation($user->columns['username'], $client) &&
-                            $this->validateAssociation($user->columns['username'], $this->config->getUserClient())
-                        );
                     } else {
                         $message = 'The following error has happened: ' . $this->api_client_scopes->err_data;
                         $this->response['type'] = 'error';
-                        $this->response['title'] = 'Scope association validation';
+                        $this->response['title'] = 'Scope association creation';
                         $this->response['message'] = $message;
-                        $this->response['code'] = 500;
+                        $this->response['code'] = 422;
                         return false;
                     }
-                } else {
-                    $message = 'The following error has happened: ' . $this->api_client_scopes->err_data;
-                    $this->response['type'] = 'error';
-                    $this->response['title'] = 'Scope association creation';
-                    $this->response['message'] = $message;
-                    $this->response['code'] = 422;
-                    return false;
                 }
+                if ($all_scopes_created){
+                    if ($isUserClient) {
+                        return $this->validateAssociation($user->columns['username'], $client);
+                    }
+                    return (
+                        $this->validateAssociation($user->columns['username'], $client) &&
+                        $this->validateAssociation($user->columns['username'], $this->config->getUserClient())
+                    );
+                }
+                return false;
             } else {
                 $this->response['type'] = 'error';
                 $this->response['title'] = 'Token error';

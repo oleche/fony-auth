@@ -30,8 +30,9 @@ class AuthController extends CoreController implements ApiMethods
         $this->auth_handler = new AuthUtils($configfile);
     }
 
-    public function doPOST($token = null, $params = array(), $verb = null)
+    public function doPOST($token = null, $verb = null)
     {
+        $params = $this->request;
         try {
             if (TokenUtils::validateTokenSanity($token, TokenType::BASIC)) {
                 $token = TokenUtils::sanitizeToken($token, TokenType::BASIC);

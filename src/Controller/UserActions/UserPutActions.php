@@ -17,8 +17,9 @@ class UserPutActions extends CoreActions implements CoreActionsInterface
 
     public function default($id = null)
     {
-        if ($this->validateFields($_POST, 'api/user/:id', 'PUT')) {
+        if ($this->validateFields($this->request, $this->form_endpoint, 'PUT')) {
             $user_put = new UserPut($this->session, $id);
+            $user_put->setParameters($this->request);
             $user_put->setValidScope($this->allowed_roles);
             $user_put->putUser();
             $this->response = $user_put->response;
@@ -30,6 +31,7 @@ class UserPutActions extends CoreActions implements CoreActionsInterface
     {
         if ($this->validateUpload($this->file)) {
             $user_put = new UserUpload($this->session, $id);
+            $user_put->setParameters($this->request);
             $user_put->setValidScope($this->allowed_roles);
             $user_put->put($this->file);
             $this->response = $user_put->response;
@@ -38,27 +40,30 @@ class UserPutActions extends CoreActions implements CoreActionsInterface
 
     public function password($id)
     {
-        if ($this->validateFields($_POST, 'api/user/:id/password', 'PUT')) {
-            $status_put = new UserPut($this->session, $id);
-            $status_put->setValidScope($this->allowed_roles);
-            $status_put->changePassword();
-            $this->response = $status_put->response;
+        if ($this->validateFields($_POST, $this->form_endpoint, 'PUT')) {
+            $user_put = new UserPut($this->session, $id);
+            $user_put->setParameters($this->request);
+            $user_put->setValidScope($this->allowed_roles);
+            $user_put->changePassword();
+            $this->response = $user_put->response;
         }
     }
 
     public function enable($id)
     {
-        $status_put = new UserPut($this->session, $id);
-        $status_put->setValidScope($this->allowed_roles);
-        $status_put->enable();
-        $this->response = $status_put->response;
+        $user_put = new UserPut($this->session, $id);
+        $user_put->setParameters($this->request);
+        $user_put->setValidScope($this->allowed_roles);
+        $user_put->enable();
+        $this->response = $user_put->response;
     }
 
     public function disable($id)
     {
-        $status_put = new UserPut($this->session, $id);
-        $status_put->setValidScope($this->allowed_roles);
-        $status_put->disable();
-        $this->response = $status_put->response;
+        $user_put = new UserPut($this->session, $id);
+        $user_put->setParameters($this->request);
+        $user_put->setValidScope($this->allowed_roles);
+        $user_put->disable();
+        $this->response = $user_put->response;
     }
 }

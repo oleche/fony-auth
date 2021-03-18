@@ -150,6 +150,7 @@ class AuthUtils implements AuthenticatorInterface
             if ($result[0]->columns['client_id']['client_id'] == $this->client_id) {
                 $this->scopes = $result[0]->columns['scopes'];
                 $this->scope_level = $result[0]->columns['scope_level'];
+                $this->username = $result[0]->columns['username']['username'];
                 $result[0]->columns['enabled'] = 0;
                 $result[0]->columns['blacklisted'] = 1;
                 $result[0]->columns['client_id'] = $result[0]->columns['client_id']['client_id'];

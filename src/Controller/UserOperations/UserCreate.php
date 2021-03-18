@@ -9,11 +9,7 @@
 namespace Geekcow\FonyAuth\Controller\UserOperations;
 
 use Geekcow\FonyAuth\Controller\ClientOperations\ClientCreate;
-use Geekcow\FonyAuth\Model\ApiUser;
-use Geekcow\FonyAuth\Model\ApiUserType;
-use Geekcow\FonyAuth\Utils\ConfigurationUtils;
 use Geekcow\FonyCore\Controller\CoreOperation;
-use Geekcow\FonyCore\Helpers\AllowCore;
 
 class UserCreate extends CoreOperation
 {
@@ -23,7 +19,7 @@ class UserCreate extends CoreOperation
     {
         parent::__construct($model, $session);
 
-        $this->client_create = new ClientCreate();
+        $this->client_create = new ClientCreate($session);
     }
 
     public function createUser($asoc = 1)

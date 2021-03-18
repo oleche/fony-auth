@@ -18,7 +18,10 @@ class ClientGetActions extends CoreActions implements CoreActionsInterface
 
         $model = new ApiClient();
         $client_get = new GenericGet($model, $this->session, $id);
-        $client_get->getUser();
+        if ($this->session->session_level > 1){
+            $client_get->checkUser();
+        }
+        $client_get->get();
         $this->response = $client_get->getResponse();
         $this->pagination_link = $client_get->getPaginationLink();
     }

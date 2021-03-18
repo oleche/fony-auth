@@ -25,7 +25,7 @@ class UserPut
         $this->user = new ApiUser();
         //YOU CAN ADD MORE MODELS THAT NEED TO BE INITIALIZED HERE
 
-        $this->validScope = AllowCore::ADMINISTRATOR();
+        $this->validScope = AllowCore::SYSTEM();
         $this->response = array();
         $this->session = $session;
         $this->userid = $userid;
@@ -65,7 +65,7 @@ class UserPut
                     array('username' => $this->userid),
                     null,
                     true,
-                    " password = '$pass' AND enabled = 1 "
+                    " password = '$password' AND enabled = 1 "
                 )
             ) {
                 if ($this->updatePassword()) {

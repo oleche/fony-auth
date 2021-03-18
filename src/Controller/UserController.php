@@ -22,8 +22,7 @@ class UserController extends BaseController implements ApiMethods
 {
     public function __construct()
     {
-        $configfile = ConfigurationUtils::getInstance(MY_DOC_ROOT . "/src/config/config.ini");
-        parent::__construct($configfile);
+        parent::__construct();
     }
 
     //CREATE
@@ -34,8 +33,8 @@ class UserController extends BaseController implements ApiMethods
                 return false;
             }
 
-            if (is_array($args) && empty($args)) {
-                if ($this->validateFields($_POST, 'v1/user', 'POST')) {
+            if (is_array($args) && empty($args) && empty($verb)) {
+                if ($this->validateFields($this->request, $this->form_endpoint, 'POST')) {
                     $user_create = new UserCreate(new ApiUser(), $this->session);
                     $user_create->createUser();
                     //TODO: Broadcaster idea: allow the controller to implement classes that will serve as
@@ -67,17 +66,7 @@ class UserController extends BaseController implements ApiMethods
             }
 
             $user_get_action = new UserGetActions();
-            $user_get_action->setSession($this->session);
-            $user_get_action->setRoles($this->allowed_roles);
-            $this->setExecutableClass($user_get_action);
-            if (is_array($args) && empty($args)) {
-                $this->setActionId($verb);
-                $this->execute();
-            } else {
-                $this->setActionId($verb);
-                $this->setActionVerb($args[0]);
-                $this->execute(true);
-            }
+            $this->executeActionFlow($args, $verb, $user_get_action);
         }
 
         if (
@@ -99,19 +88,12 @@ class UserController extends BaseController implements ApiMethods
     public function doPUT($args = array(), $verb = null, $file = null)
     {
         if (!$this->validation_fail) {
-            $user_put_actions = new UserPutActions();
-            $user_put_actions->setSession($this->session);
-            $user_put_actions->setRoles($this->allowed_roles);
-            $user_put_actions->setFile($file);
-            $this->setExecutableClass($user_put_actions);
-            if (is_array($args) && empty($args)) {
-                $this->setActionId($verb);
-                $this->execute();
-            } else {
-                $this->setActionId($verb);
-                $this->setActionVerb($args[0]);
-                $this->execute(true);
+            if (!$this->validateScope($this->session->session_scopes)) {
+                return false;
             }
+
+            $user_put_actions = new UserPutActions();
+            $this->executeActionFlow($args, $verb, $user_put_actions, $file);
         }
 
         if (
@@ -147,12 +129,11 @@ class UserController extends BaseController implements ApiMethods
                 return false;
             }
 
-            $user_put_actions = new UserDeleteActions();
-            $user_put_actions->setSession($this->session);
-            $user_put_actions->setRoles($this->allowed_roles);
-            $this->setExecutableClass($user_put_actions);
+            $user_delete_actions = new UserDeleteActions();
             if (is_array($args) && empty($args)) {
-                $this->setActionId($verb);
+                $user_delete_actions->setSession($this->session);
+                $user_delete_actions->setRoles($this->allowed_roles);
+                $this->setExecutableClass($user_delete_actions);
                 $this->setActionVerb($verb);
                 $this->execute();
             } else {
