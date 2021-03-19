@@ -36,7 +36,7 @@ class ClientCreate extends CoreOperation
         $user = new ApiUser();
         $client = '';
         if ($user->fetch_id(array('username' => $this->session->username))) {
-            if ($this->validateApi($user, $client, $_POST['name'], 1, true)) {
+            if ($this->validateApi($user, $client, $this->parameters['name'], 1, true)) {
                 $this->response['entity'] = array();
                 $this->response['entity']['client'] = $client;
                 $this->response['code'] = 200;
@@ -51,7 +51,7 @@ class ClientCreate extends CoreOperation
 
     public function doAssign()
     {
-        if ($this->validateAssociation($_POST['username'], $_POST['token'])) {
+        if ($this->validateAssociation($this->parameters['username'], $this->parameters['token'])) {
             $this->response['entity'] = array();
             $this->response['entity']['asociation'] = $this->api_user_asoc->columns;
             $this->response['code'] = 200;
