@@ -21,10 +21,9 @@ class ValidateController extends CoreController implements ApiMethods
 
     public function __construct()
     {
-        $configfile = ConfigurationUtils::getInstance(MY_DOC_ROOT . "/src/config/config.ini");
-        parent::__construct($configfile);
+        parent::__construct();
         $this->response = array();
-        $this->auth_handler = new AuthUtils($configfile);
+        $this->auth_handler = new AuthUtils();
     }
 
     public function doPOST($token = null)

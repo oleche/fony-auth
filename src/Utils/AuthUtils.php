@@ -37,9 +37,9 @@ class AuthUtils implements AuthenticatorInterface
     private $scope_level;
     private $config;
 
-    public function __construct($configfile = MY_DOC_ROOT . "/src/config/config.ini")
+    public function __construct()
     {
-        $this->config = ConfigurationUtils::getInstance($configfile);
+        $this->config = ConfigurationUtils::getInstance();
         $this->api_client = new ApiClient();
         $this->api_client_scope = new ApiClientScope();
         $this->api_token = new ApiToken();
@@ -175,8 +175,8 @@ class AuthUtils implements AuthenticatorInterface
      *   scopes
      *   scope_level
      *   username
+     * @param $token
      * @return BOOLEAN the user and password matches
-     *
      */
     private function validateToken($token)
     {
@@ -226,8 +226,8 @@ class AuthUtils implements AuthenticatorInterface
      * Validates a BEARER token to identify if its related to a valid and active
      * client and with a valid session
      *
+     * @param $token
      * @return BOOLEAN if found and assigns the client_id, email, username and asociation status
-     *
      */
     public function validateRefreshToken($token)
     {
@@ -242,8 +242,8 @@ class AuthUtils implements AuthenticatorInterface
     /**
      * Validates a refresh token and disables the existing one if found
      *
+     * @param $token
      * @return BOOLEAN if found and assigns the client_id, email, username and asociation status
-     *
      */
     public function validateBearerToken($token)
     {
@@ -265,8 +265,8 @@ class AuthUtils implements AuthenticatorInterface
      * Identifies if the scopes provided do exists in the database and are assigned
      * to the required username or client
      *
+     * @param $grant_type
      * @return BOOLEAN if found
-     *
      */
     public function validateScopes($grant_type)
     {
@@ -316,8 +316,8 @@ class AuthUtils implements AuthenticatorInterface
      * Identifies if the scopes provided do exists in the database and are assigned
      * to the required username or client
      *
+     * @param $user_scopes
      * @return BOOLEAN if found
-     *
      */
     public function validatePasswordGrantScopes($user_scopes)
     {
@@ -482,8 +482,8 @@ class AuthUtils implements AuthenticatorInterface
     /**
      * Performs the login validation of the user and password
      *
+     * @param array $params
      * @return BOOLEAN the user and password matches
-     *
      */
     public function validateLogin($params = array())
     {
