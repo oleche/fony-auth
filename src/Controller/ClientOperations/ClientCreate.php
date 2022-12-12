@@ -69,7 +69,9 @@ class ClientCreate extends CoreOperation
         $user_type = new ApiUserType();
         $scopes_to_use = array();
 
-        if ($user_type->fetch_id(array('id' => $user->columns['type']))) {
+        $user_type_id = (isset($user->columns['type']['id'])) ? $user->columns['type']['id'] : $user->columns['type'];
+
+        if ($user_type->fetch_id(array('id' => $user_type_id))) {
             $scopes_to_use = explode(',', $user_type->columns['scope']);
         } else {
             $this->response['type'] = 'error';
