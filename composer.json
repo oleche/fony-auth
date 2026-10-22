@@ -4,11 +4,11 @@
     "type": "library",
     "keywords": ["fony", "fony-core", "fony-auth"],
     "homepage": "https://github.com/oleche/fony-auth",
-    "version": "0.0.14",
+    "version": "0.0.15",
     "require": {
         "psr/log": "1.1.3",
-        "geekcow/dbcore": "^1.0",
-        "geekcow/fony-core": "0.0.*"
+        "geekcow/dbcore": "^1.0.42",
+        "geekcow/fony-core": "~0.0.51"
     },
     "require-dev": {
         "phpunit/phpunit": "8",

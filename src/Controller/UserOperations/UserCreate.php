@@ -24,8 +24,8 @@ class UserCreate extends CoreOperation
 
     public function createUser($asoc = 1)
     {
-        $username = md5(strtolower($_POST['email']));
-        $fullname = $_POST['name'] . ' ' . ((isset($_POST['lastname'])) ? $_POST['lastname'] : "");
+        $username = md5(strtolower($_POST['email'] ?? ''));
+        $fullname = ($_POST['name'] ?? '') . ' ' . ((isset($_POST['lastname'])) ? $_POST['lastname'] : "");
         if ($this->userExists($username)) {
             $this->response['type'] = 'error';
             $this->response['title'] = 'Create user';
@@ -36,11 +36,11 @@ class UserCreate extends CoreOperation
                 $this->response = array();
                 $password = sha1($_POST['password']);
                 $this->model->columns['username'] = strtolower($username);
-                $this->model->columns['name'] = $_POST['name'];
+                $this->model->columns['name'] = $_POST['name'] ?? null;
                 $this->model->columns['lastname'] = (isset($_POST['lastname'])) ? $_POST['lastname'] : "";
-                $this->model->columns['email'] = $_POST['email'];
+                $this->model->columns['email'] = $_POST['email'] ?? null;
                 $this->model->columns['phone'] = (isset($_POST['phone'])) ? $_POST['phone'] : "";
-                $this->model->columns['type'] = $_POST['type'];
+                $this->model->columns['type'] = $_POST['type'] ?? null;
                 $this->model->columns['avatar'] = "";
                 $this->model->columns['avatar_path'] = "";
                 $this->model->columns['password'] = (isset($password)) ? $password : "";

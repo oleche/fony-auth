@@ -42,7 +42,7 @@ class AuthController extends CoreController implements ApiMethods
                     if ($verb == 'refresh') {
                         if ($this->auth_handler->validateBasicToken($token)) {
                             if ($this->validateFields($params, 'v1/authenticate/refresh', 'POST')) {
-                                if (!$this->auth_handler->validateRefreshToken($params['refresh_token'])) {
+                                if (!$this->auth_handler->validateRefreshToken($params['refresh_token'] ?? '')) {
                                     $this->err = $this->auth_handler->getErr();
                                     $this->buildErrorSet();
                                     return false;
@@ -71,11 +71,12 @@ class AuthController extends CoreController implements ApiMethods
                             $this->auth_handler->setScopes(
                                 (isset($params['scope']) && $params['scope'] != '') ? $params['scope'] : ''
                             );
+                            $grant_type = $params['grant_type'] ?? null;
                             if (
                                 $this->auth_handler->validateBasicToken($token) &&
-                                $this->auth_handler->validateScopes($params['grant_type'])
+                                $this->auth_handler->validateScopes($grant_type)
                             ) {
-                                switch ($params['grant_type']) {
+                                switch ($grant_type) {
                                     case GrantTypes::PASSWORD:
                                         if (!$this->auth_handler->validateLogin($params)) {
                                             $this->err = $this->auth_handler->getErr();

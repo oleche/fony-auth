@@ -36,7 +36,7 @@ class ClientCreate extends CoreOperation
         $user = new ApiUser();
         $client = '';
         if ($user->fetch_id(array('username' => $this->session->username))) {
-            if ($this->validateApi($user, $client, $this->parameters['name'], 1, true)) {
+            if ($this->validateApi($user, $client, $this->parameters['name'] ?? null, 1, true)) {
                 $this->response['entity'] = array();
                 $this->response['entity']['client'] = $client;
                 $this->response['code'] = 200;
@@ -51,7 +51,7 @@ class ClientCreate extends CoreOperation
 
     public function doAssign()
     {
-        if ($this->validateAssociation($this->parameters['username'], $this->parameters['token'])) {
+        if ($this->validateAssociation($this->parameters['username'] ?? null, $this->parameters['token'] ?? null)) {
             $this->response['entity'] = array();
             $this->response['entity']['asociation'] = $this->api_user_asoc->columns;
             $this->response['code'] = 200;
@@ -139,7 +139,7 @@ class ClientCreate extends CoreOperation
             } else {
                 $this->response['type'] = 'error';
                 $this->response['title'] = 'Token error';
-                $this->response['message'] = 'The following error has happened: ' . $this->api_client->err_data;
+                $this->response['message'] = 'The following error has happened: ' . $this->model->err_data;
                 $this->response['code'] = 500;
                 return false;
             }

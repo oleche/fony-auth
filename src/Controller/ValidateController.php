@@ -18,6 +18,7 @@ use Geekcow\FonyCore\Utils\TokenUtils;
 class ValidateController extends CoreController implements ApiMethods
 {
     private $auth_handler;
+    private $err = '';
 
     public function __construct()
     {
@@ -33,7 +34,7 @@ class ValidateController extends CoreController implements ApiMethods
                 $token = TokenUtils::sanitizeToken($token, TokenType::BASIC);
                 if ($this->auth_handler->validateBasicToken($token)) {
                     if ($this->validateFields($this->request, 'v1/validate', 'POST')) {
-                        if (!$this->auth_handler->validateBearerToken($this->request['token'])) {
+                        if (!$this->auth_handler->validateBearerToken($this->request['token'] ?? '')) {
                             $this->err = $this->auth_handler->getErr();
                             $this->buildErrorSet();
                             return false;
@@ -95,7 +96,7 @@ class ValidateController extends CoreController implements ApiMethods
             if ($this->err == 'User disabled') {
                 $this->response['code'] = 423;
             } else {
-                if (strpos($this->err, 'token') !== false) {
+                if (strpos((string)$this->err, 'token') !== false) {
                     $this->response['code'] = 200;
                     $this->response['active'] = false;
                 } else {

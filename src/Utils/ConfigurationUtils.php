@@ -32,13 +32,13 @@ class ConfigurationUtils
         if (($config = @parse_ini_file($configfile)) == false) {
             $this->app_name = "NO CONFIG FILE FOUND";
         } else {
-            $this->app_name = $config['fony.app_name'];
-            $this->app_secret = $config['fony.app_secret'];
-            $this->user_client = $config['fony.user_client'];
-            $this->user_secret = $config['fony.user_secret'];
-            $this->file_path = $config['fony.file_path'];
-            $this->file_url = $config['fony.file_url'];
-            $this->site_url = $config['fony.site_url'];
+            $this->app_name = $config['fony.app_name'] ?? null;
+            $this->app_secret = $config['fony.app_secret'] ?? null;
+            $this->user_client = $config['fony.user_client'] ?? null;
+            $this->user_secret = $config['fony.user_secret'] ?? null;
+            $this->file_path = $config['fony.file_path'] ?? null;
+            $this->file_url = $config['fony.file_url'] ?? null;
+            $this->site_url = $config['fony.site_url'] ?? null;
         }
 
         $this->filename = $configfile;

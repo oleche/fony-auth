@@ -17,6 +17,7 @@ class UserPut
     private $session;
     private $userid;
     private $validScope;
+    private $parameters;
 
     public $response;
 
@@ -55,11 +56,21 @@ class UserPut
         $this->validScope = $scope;
     }
 
+    /**
+     * Called by UserPutActions; the user values are still read from $_POST
+     *
+     * @param array $parameters
+     */
+    public function setParameters($parameters)
+    {
+        $this->parameters = $parameters;
+    }
+
     public function changePassword()
     {
         if ($this->validateScope()) {
             //old_password
-            $password = sha1($_POST['old_password']);
+            $password = sha1($_POST['old_password'] ?? '');
             if (
                 $this->user->fetch_id(
                     array('username' => $this->userid),
@@ -141,7 +152,7 @@ class UserPut
 
     private function updatePassword()
     {
-        $password = sha1($_POST['password']);
+        $password = sha1($_POST['password'] ?? '');
         $this->user->columns['password'] = $password;
         $this->user->columns['type'] = $this->user->columns['type']['id'];
         $this->user->columns['updated_at'] = date("Y-m-d H:i:s");

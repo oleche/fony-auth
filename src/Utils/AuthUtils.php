@@ -112,8 +112,10 @@ class AuthUtils implements AuthenticatorInterface
     {
         $token64 = base64_decode($token);
         $tokens = explode(":", $token64);
+        $client_id = $tokens[0];
+        $client_secret = $tokens[1] ?? '';
         $result = (array)$this->api_client->fetch(
-            "client_id = '$tokens[0]' AND client_secret = '$tokens[1]' AND enabled = 1"
+            "client_id = '$client_id' AND client_secret = '$client_secret' AND enabled = 1"
         );
         if (count($result) == 1) {
             if (isset($result[0]->columns)) {
@@ -146,7 +148,7 @@ class AuthUtils implements AuthenticatorInterface
             array('updated_at'),
             false
         );
-        if (count($result) == 1) {
+        if (is_array($result) && count($result) == 1) {
             if ($result[0]->columns['client_id']['client_id'] == $this->client_id) {
                 $this->scopes = $result[0]->columns['scopes'];
                 $this->scope_level = $result[0]->columns['scope_level'];
@@ -186,8 +188,8 @@ class AuthUtils implements AuthenticatorInterface
             array('updated_at'),
             false
         );
-        if (count($result) == 1) {
-            $token = utf8_decode(
+        if (is_array($result) && count($result) == 1) {
+            $token = TokenUtils::utf8ToLatin1(
                 TokenUtils::decrypt(TokenUtils::base64UrlDecode($token), $this->config->getAppSecret())
             );
             $token = explode('|', $token);
@@ -272,7 +274,7 @@ class AuthUtils implements AuthenticatorInterface
     {
         $retval = true;
 
-        $scopes_arr = explode(',', $this->scopes);
+        $scopes_arr = explode(',', (string)$this->scopes);
         if (count($scopes_arr) <= 0) {
             $retval = ($retval && false);
             $this->err = "no scopes selected";
@@ -292,7 +294,7 @@ class AuthUtils implements AuthenticatorInterface
                         $result = $this->api_client_scope->fetch(
                             "id_client = '$this->client_id' AND id_scope = '" . $this->scope->columns['name'] . "'"
                         );
-                        if (count($result) > 0) {
+                        if (is_array($result) && count($result) > 0) {
                             $retval = ($retval && true);
                         } else {
                             $retval = ($retval && false);
@@ -323,13 +325,13 @@ class AuthUtils implements AuthenticatorInterface
     {
         $retval = true;
 
-        $request_scopes = explode(',', $this->scopes);
+        $request_scopes = explode(',', (string)$this->scopes);
         if (count($request_scopes) <= 0) {
             $retval = ($retval && false);
             $this->err = "no scopes selected";
         }
 
-        $user_scopes = explode(',', $user_scopes);
+        $user_scopes = explode(',', (string)$user_scopes);
         if (count($user_scopes) <= 0) {
             $this->err = "no scopes available for user";
             return false;
@@ -414,9 +416,9 @@ class AuthUtils implements AuthenticatorInterface
             false
         );
         $last = false;
-        foreach ($result as $r) {
+        foreach ((array)$result as $r) {
             if (count($result) > 0) {
-                $token = utf8_decode(
+                $token = TokenUtils::utf8ToLatin1(
                     TokenUtils::decrypt(
                         TokenUtils::base64UrlDecode($r->columns['token']),
                         $this->config->getAppSecret()
@@ -427,9 +429,9 @@ class AuthUtils implements AuthenticatorInterface
                     $token[2] = (string)$token[2];
                     $token[4] = (string)$token[4];
 
-                    if (trim($this->username) == "" || trim($this->username) == trim($token[4])) {
+                    if (trim((string)$this->username) == "" || trim((string)$this->username) == trim($token[4])) {
                         if (
-                            (trim($this->scopes) == trim($token[2])) &&
+                            (trim((string)$this->scopes) == trim($token[2])) &&
                             (
                                 (
                                     (strtotime($result[0]->columns['updated_at']) * 1000) +
@@ -467,7 +469,7 @@ class AuthUtils implements AuthenticatorInterface
     }
 
     private function validateScopeLevel(){
-        $scopes_arr = explode(',', $this->scopes);
+        $scopes_arr = explode(',', (string)$this->scopes);
 
         $this->scope_level = 10;
         foreach ($scopes_arr as $value) {
@@ -487,9 +489,9 @@ class AuthUtils implements AuthenticatorInterface
      */
     public function validateLogin($params = array())
     {
-        $params['username'] = md5($params['username']);
+        $params['username'] = md5($params['username'] ?? '');
         $result = array();
-        $pass = sha1($params['password']);
+        $pass = sha1($params['password'] ?? '');
         if (
             $this->user->fetch_id(
                 array('username' => $params['username']),
