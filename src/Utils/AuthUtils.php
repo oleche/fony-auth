@@ -112,10 +112,11 @@ class AuthUtils implements AuthenticatorInterface
     {
         $token64 = base64_decode($token);
         $tokens = explode(":", $token64);
-        $client_id = $tokens[0];
-        $client_secret = $tokens[1] ?? '';
+        // the credentials come straight from the Authorization header
+        $client_id = $this->api_client->db->checkSQL($tokens[0]);
+        $client_secret = $this->api_client->db->checkSQL($tokens[1] ?? '');
         $result = (array)$this->api_client->fetch(
-            "client_id = '$client_id' AND client_secret = '$client_secret' AND enabled = 1"
+            "client_id = $client_id AND client_secret = $client_secret AND enabled = 1"
         );
         if (count($result) == 1) {
             if (isset($result[0]->columns)) {
@@ -142,8 +143,9 @@ class AuthUtils implements AuthenticatorInterface
      */
     private function isRefreshToken($token)
     {
+        $quoted_token = $this->api_token->db->checkSQL($token);
         $result = $this->api_token->fetch(
-            "refresh_token = '$token' AND blacklisted = 0",
+            "refresh_token = $quoted_token AND blacklisted = 0",
             false,
             array('updated_at'),
             false
@@ -182,8 +184,9 @@ class AuthUtils implements AuthenticatorInterface
      */
     private function validateToken($token)
     {
+        $quoted_token = $this->api_token->db->checkSQL($token);
         $result = $this->api_token->fetch(
-            "token = '$token' AND enabled = 1 AND blacklisted = 0",
+            "token = $quoted_token AND enabled = 1 AND blacklisted = 0",
             false,
             array('updated_at'),
             false
@@ -282,7 +285,7 @@ class AuthUtils implements AuthenticatorInterface
 
         $this->scope_level = 10;
         foreach ($scopes_arr as $value) {
-            if ($this->scope->fetch_id(array("name" => $value))) {
+            if ($this->isScopeName($value) && $this->scope->fetch_id(array("name" => $value))) {
                 if ($this->scope->columns['level'] < $this->scope_level) {
                     $this->scope_level = $this->scope->columns['level'];
                 }
@@ -473,12 +476,23 @@ class AuthUtils implements AuthenticatorInterface
 
         $this->scope_level = 10;
         foreach ($scopes_arr as $value) {
-            if ($this->scope->fetch_id(array("name" => $value))) {
+            if ($this->isScopeName($value) && $this->scope->fetch_id(array("name" => $value))) {
                 if ($this->scope->columns['level'] < $this->scope_level) {
                     $this->scope_level = $this->scope->columns['level'];
                 }
             }
         }
+    }
+
+    /**
+     * Scope names come from the request and are used in queries, so only identifier characters are accepted
+     *
+     * @param $scope
+     * @return bool
+     */
+    private function isScopeName($scope)
+    {
+        return is_string($scope) && preg_match('/^[A-Za-z0-9_.:-]+$/', $scope) === 1;
     }
 
     /**
