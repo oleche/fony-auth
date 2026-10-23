@@ -50,31 +50,36 @@ class UserCreate extends CoreOperation
                 $this->model->columns['created_at'] = date("Y-m-d H:i:s");
                 $this->model->columns['updated_at'] = date("Y-m-d H:i:s");
 
-                $id = $this->model->insert();
-                if (is_numeric($id)) {
-                    $client = '';
-                    $client_name = 'CLIENT: ' . $fullname;
-                    if ($this->client_create->validateApi($this->model, $client, $client_name, $asoc)) {
-                        if ($this->model->fetch_id(array('username' => $username))) {
-                            $this->response['entity'] = array();
-                            $this->response['entity']['user'] = $this->model->columns;
-                            $this->response['entity']['client'] = $client;
-                            $this->response['code'] = 200;
-                        } else {
-                            $this->response['type'] = 'error';
-                            $this->response['title'] = 'Display user';
-                            $this->response['message'] = 'The following error has happened: ' . $this->model->err_data;
-                            $this->response['code'] = 500;
-                        }
-                    } else {
-                        $this->removeUser($this->model->columns['username']);
-                        $this->response = $this->client_create->getResponse();
+                $client = '';
+                $client_name = 'CLIENT: ' . $fullname;
+                // the user, its client, the client scopes and the associations are written together
+                $created = $this->model->transaction(function () use (&$client, $client_name, $asoc) {
+                    $id = $this->model->insert();
+                    if (!is_numeric($id)) {
+                        $this->response['type'] = 'error';
+                        $this->response['title'] = 'Create user';
+                        $this->response['message'] = 'The following error has happened: ' . $this->model->err_data;
+                        $this->response['code'] = 422;
+                        return false;
                     }
-                } else {
-                    $this->response['type'] = 'error';
-                    $this->response['title'] = 'Create user';
-                    $this->response['message'] = 'The following error has happened: ' . $this->model->err_data;
-                    $this->response['code'] = 422;
+                    if (!$this->client_create->validateApi($this->model, $client, $client_name, $asoc)) {
+                        $this->response = $this->client_create->getResponse();
+                        return false;
+                    }
+                    return true;
+                });
+                if ($created) {
+                    if ($this->model->fetch_id(array('username' => $username))) {
+                        $this->response['entity'] = array();
+                        $this->response['entity']['user'] = $this->model->columns;
+                        $this->response['entity']['client'] = $client;
+                        $this->response['code'] = 200;
+                    } else {
+                        $this->response['type'] = 'error';
+                        $this->response['title'] = 'Display user';
+                        $this->response['message'] = 'The following error has happened: ' . $this->model->err_data;
+                        $this->response['code'] = 500;
+                    }
                 }
             }
         }
@@ -108,14 +113,5 @@ class UserCreate extends CoreOperation
         }
 
         return $validation;
-    }
-
-    private function removeUser($id)
-    {
-        if ($this->model->fetch_id(array("username" => $id))) {
-            if (!$this->model->delete()) {
-                $this->response['error_on_error'] = 'User could not be eliminated';
-            }
-        }
     }
 }

@@ -112,11 +112,13 @@ class AuthUtils implements AuthenticatorInterface
     {
         $token64 = base64_decode($token);
         $tokens = explode(":", $token64);
-        // the credentials come straight from the Authorization header
-        $client_id = $this->api_client->db->checkSQL($tokens[0]);
-        $client_secret = $this->api_client->db->checkSQL($tokens[1] ?? '');
         $result = (array)$this->api_client->fetch(
-            "client_id = $client_id AND client_secret = $client_secret AND enabled = 1"
+            "client_id = ? AND client_secret = ? AND enabled = 1",
+            false,
+            null,
+            true,
+            0,
+            [$tokens[0], $tokens[1] ?? '']
         );
         if (count($result) == 1) {
             if (isset($result[0]->columns)) {
@@ -143,12 +145,13 @@ class AuthUtils implements AuthenticatorInterface
      */
     private function isRefreshToken($token)
     {
-        $quoted_token = $this->api_token->db->checkSQL($token);
         $result = $this->api_token->fetch(
-            "refresh_token = $quoted_token AND blacklisted = 0",
+            "refresh_token = ? AND blacklisted = 0",
             false,
             array('updated_at'),
-            false
+            false,
+            0,
+            [(string)$token]
         );
         if (is_array($result) && count($result) == 1) {
             if ($result[0]->columns['client_id']['client_id'] == $this->client_id) {
@@ -184,12 +187,13 @@ class AuthUtils implements AuthenticatorInterface
      */
     private function validateToken($token)
     {
-        $quoted_token = $this->api_token->db->checkSQL($token);
         $result = $this->api_token->fetch(
-            "token = $quoted_token AND enabled = 1 AND blacklisted = 0",
+            "token = ? AND enabled = 1 AND blacklisted = 0",
             false,
             array('updated_at'),
-            false
+            false,
+            0,
+            [(string)$token]
         );
         if (is_array($result) && count($result) == 1) {
             $token = TokenUtils::utf8ToLatin1(
@@ -295,7 +299,12 @@ class AuthUtils implements AuthenticatorInterface
                         break;
                     case GrantTypes::CLIENT_CREDENTIAL:
                         $result = $this->api_client_scope->fetch(
-                            "id_client = '$this->client_id' AND id_scope = '" . $this->scope->columns['name'] . "'"
+                            "id_client = ? AND id_scope = ?",
+                            false,
+                            null,
+                            true,
+                            0,
+                            [$this->client_id, $this->scope->columns['name']]
                         );
                         if (is_array($result) && count($result) > 0) {
                             $retval = ($retval && true);
@@ -413,10 +422,12 @@ class AuthUtils implements AuthenticatorInterface
     private function locateValidToken()
     {
         $result = $this->api_token->fetch(
-            "client_id = '$this->client_id' AND username = '$this->username' AND enabled = 1",
+            "client_id = ? AND username = ? AND enabled = 1",
             false,
             array('updated_at'),
-            false
+            false,
+            0,
+            [$this->client_id, $this->username]
         );
         $last = false;
         foreach ((array)$result as $r) {
@@ -505,13 +516,21 @@ class AuthUtils implements AuthenticatorInterface
     {
         $params['username'] = md5($params['username'] ?? '');
         $result = array();
-        $pass = sha1($params['password'] ?? '');
+        $password = (string)($params['password'] ?? '');
+        $hashes = [sha1($password)];
+        // passwords used to arrive with strip_tags()/trim() applied; accept hashes stored from that form too
+        $legacy_password = trim(strip_tags($password));
+        if ($legacy_password !== $password) {
+            $hashes[] = sha1($legacy_password);
+        }
         if (
             $this->user->fetch_id(
                 array('username' => $params['username']),
                 null,
                 true,
-                " password = '$pass' AND enabled = 1 "
+                " password IN (" . implode(', ', array_fill(0, count($hashes), '?')) . ") AND enabled = 1 ",
+                0,
+                $hashes
             )
         ) {
             if ($this->validatePasswordGrantScopes($this->user->columns['type']['scope'])) {

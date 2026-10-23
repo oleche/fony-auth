@@ -129,19 +129,9 @@ class UserController extends BaseController implements ApiMethods
                 return false;
             }
 
+            // same routing as the other methods: /user/{id}, /user/{action}/{id}, /user/{md5}/{action}
             $user_delete_actions = new UserDeleteActions();
-            if (is_array($args) && empty($args)) {
-                $user_delete_actions->setSession($this->session);
-                $user_delete_actions->setRoles($this->allowed_roles);
-                $this->setExecutableClass($user_delete_actions);
-                $this->setActionVerb($verb);
-                $this->execute();
-            } else {
-                $this->response['type'] = 'error';
-                $this->response['title'] = 'User';
-                $this->response['code'] = 404;
-                $this->response['message'] = "Invalid URL";
-            }
+            $this->executeActionFlow($args, $verb, $user_delete_actions);
         }
         $this->filterResponse(['notes']);
     }

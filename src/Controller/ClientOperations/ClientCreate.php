@@ -36,7 +36,12 @@ class ClientCreate extends CoreOperation
         $user = new ApiUser();
         $client = '';
         if ($user->fetch_id(array('username' => $this->session->username))) {
-            if ($this->validateApi($user, $client, $this->parameters['name'] ?? null, 1, true)) {
+            $name = $this->parameters['name'] ?? null;
+            // the client, its scopes and the association are written together
+            $created = $this->model->transaction(function () use ($user, &$client, $name) {
+                return $this->validateApi($user, $client, $name, 1, true);
+            });
+            if ($created) {
                 $this->response['entity'] = array();
                 $this->response['entity']['client'] = $client;
                 $this->response['code'] = 200;
